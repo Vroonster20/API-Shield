@@ -1,0 +1,34 @@
+{
+  "name": "api-shield",
+  "version": "1.0.0",
+  "description": "A compact security layer that detects and blocks malicious API activity using rate limits, IP monitoring, automated bans, and fuzz‑testing, all managed through a central admin panel.",
+  "main": "index.js",
+  "scripts": {
+    "dev:ts": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmiti",
+
+    "dev:py": "fastapi dev backend/main.py --host 127.0.0.1 --port 8001",
+    "start:py": "fastapi run backend/main.py --host 127.0.0.1 --port 8001"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vroonster20/API-Shield.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Vroonster20/API-Shield/issues"
+  },
+  "homepage": "https://github.com/Vroonster20/API-Shield#readme",
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.10.0"
+  }
+}
