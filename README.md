@@ -9,10 +9,10 @@ Identify suspicious patterns such as repeated failed logins, malformed payloads,
 Test the API against malformed, random, or unexpected inputs to uncover vulnerabilities in authentication, authorization, and data handling. 
 ## Control Panel and UI
 Master control panel to manage the program and configure settings
-    - Run fuzzing test
-    - View logs
-    - Configure rate limits and throttling
-    - Configure and manage bans and durations
+- Run fuzzing test
+- View logs
+- Configure rate limits and throttling
+- Configure and manage bans and durations
 
 ## Security Logging
 Record security events, including rate limit triggers, bans, and fuzzing results, for later review and analysis.
