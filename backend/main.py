@@ -1,8 +1,5 @@
-from fastapi import FastAPI
+"""Private Shield management listener ASGI entry point."""
 
-app = FastAPI()
+from shield_api.admin_api import create_management
 
-@app.get("/")
-def RootTest():
-    return {"message": "I am groot."}
-
+app = create_management()

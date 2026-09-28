@@ -1,0 +1,220 @@
+{
+  "schema_version": 1,
+  "service": {
+    "id": "storefront",
+    "name": "Demonstration storefront",
+    "public_host": "api.localhost",
+    "upstream_id": "demo-origin",
+    "enabled": true,
+    "unmatched_action": "deny",
+    "max_body_bytes": 1048576,
+    "ip_rate": {
+      "limit": 300,
+      "window_seconds": 60
+    },
+    "abuse": {
+      "auto_ban_enabled": false,
+      "strike_limit": 10,
+      "window_seconds": 60,
+      "ban_seconds": 300
+    },
+    "routes": [
+      {
+        "id": "login-post",
+        "name": "Login",
+        "path": "/auth/login",
+        "methods": [
+          "POST"
+        ],
+        "max_body_bytes": 16384,
+        "content_types": [
+          "application/json"
+        ],
+        "ip_rate": {
+          "limit": 10,
+          "window_seconds": 60
+        },
+        "json_schema": {
+          "type": "object",
+          "required": [
+            "username",
+            "password"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "username": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 254
+            },
+            "password": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        }
+      },
+      {
+        "id": "signup-post",
+        "name": "Signup",
+        "path": "/auth/register",
+        "methods": [
+          "POST"
+        ],
+        "max_body_bytes": 32768,
+        "content_types": [
+          "application/json"
+        ],
+        "ip_rate": {
+          "limit": 5,
+          "window_seconds": 600
+        },
+        "json_schema": {
+          "type": "object",
+          "required": [
+            "username",
+            "password"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "username": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 254
+            },
+            "password": {
+              "type": "string",
+              "minLength": 12,
+              "maxLength": 128
+            }
+          }
+        }
+      },
+      {
+        "id": "cart-add",
+        "name": "Add a cart item",
+        "path": "/cart/items",
+        "methods": [
+          "POST"
+        ],
+        "max_body_bytes": 32768,
+        "content_types": [
+          "application/json"
+        ],
+        "ip_rate": {
+          "limit": 120,
+          "window_seconds": 60
+        },
+        "json_schema": {
+          "type": "object",
+          "required": [
+            "product_id",
+            "quantity"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "product_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "quantity": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 99
+            }
+          }
+        }
+      },
+      {
+        "id": "products-read",
+        "name": "Read products",
+        "path": "/products",
+        "methods": [
+          "GET",
+          "HEAD"
+        ],
+        "max_body_bytes": 0,
+        "content_types": [],
+        "ip_rate": {
+          "limit": 120,
+          "window_seconds": 60
+        },
+        "json_schema": null
+      },
+      {
+        "id": "demo-page",
+        "name": "Demo storefront",
+        "path": "/",
+        "methods": [
+          "GET"
+        ],
+        "max_body_bytes": 0,
+        "content_types": [],
+        "ip_rate": null,
+        "json_schema": null
+      },
+      {
+        "id": "cart-read",
+        "name": "Read own cart",
+        "path": "/cart/items",
+        "methods": [
+          "GET"
+        ],
+        "max_body_bytes": 0,
+        "content_types": [],
+        "ip_rate": null,
+        "json_schema": null
+      },
+      {
+        "id": "cart-delete",
+        "name": "Remove own item",
+        "path": "/cart/items/{item_id}",
+        "methods": [
+          "DELETE"
+        ],
+        "max_body_bytes": 0,
+        "content_types": [],
+        "ip_rate": null,
+        "json_schema": null
+      },
+      {
+        "id": "booking-post",
+        "name": "Reserve a seat",
+        "path": "/reservations",
+        "methods": [
+          "POST"
+        ],
+        "max_body_bytes": 16384,
+        "content_types": [
+          "application/json"
+        ],
+        "ip_rate": {
+          "limit": 20,
+          "window_seconds": 60
+        },
+        "json_schema": {
+          "type": "object",
+          "required": [
+            "resource",
+            "seats"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "resource": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "seats": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 8
+            }
+          }
+        }
+      }
+    ]
+  }
+}

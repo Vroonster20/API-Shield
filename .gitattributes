@@ -1,0 +1,2 @@
+# Migration checksums must match across Windows and Unix checkouts.
+backend/shield_api/migrations/*.sql text eol=lf

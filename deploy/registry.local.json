@@ -1,0 +1,5 @@
+{
+  "upstreams": [
+    {"id": "demo-origin", "name": "Local synthetic demo", "scheme": "http", "host": "127.0.0.1", "port": 9000}
+  ]
+}

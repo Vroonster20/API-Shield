@@ -1,16 +1,17 @@
 {
   "name": "api-shield",
   "version": "1.0.0",
-  "description": "A compact security layer that detects and blocks malicious API activity using rate limits, IP monitoring, automated bans, and fuzz‑testing, all managed through a central admin panel.",
-  "main": "index.js",
+  "description": "A local API security gateway with rate limits, temporary bans, request validation, isolated fuzz tests and an administrator panel.",
   "scripts": {
-    "dev:ts": "tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "typecheck": "tsc --noEmiti",
-
-    "dev:py": "fastapi dev backend/main.py --host 127.0.0.1 --port 8001",
-    "start:py": "fastapi run backend/main.py --host 127.0.0.1 --port 8001"
+    "dev:ts": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "start": "vite preview --host 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "dev:py": "python -m uvicorn main:app --app-dir backend --host 127.0.0.1 --port 8081 --reload --no-proxy-headers --no-access-log",
+    "start:py": "python -m uvicorn main:app --app-dir backend --host 127.0.0.1 --port 8081 --no-proxy-headers --no-access-log",
+    "start:gateway": "python -m uvicorn gateway:app --app-dir backend --host 127.0.0.1 --port 8080 --no-proxy-headers --no-access-log",
+    "test:e2e": "playwright test",
+    "start:demo": "python -m uvicorn demo:app --app-dir backend --host 127.0.0.1 --port 9000 --no-proxy-headers --no-access-log"
   },
   "repository": {
     "type": "git",
@@ -24,11 +25,10 @@
   },
   "homepage": "https://github.com/Vroonster20/API-Shield#readme",
   "devDependencies": {
-    "@types/node": "^22.20.2",
-    "tsx": "^4.23.13",
-    "typescript": "^7.0.2"
+    "@playwright/test": "1.63.0",
+    "@types/node": "26.6.3",
+    "typescript": "7.0.2",
+    "vite": "8.3.1"
   },
-  "dependencies": {
-    "@prisma/client": "^7.10.0"
-  }
+  "type": "module"
 }

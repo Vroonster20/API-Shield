@@ -20,6 +20,20 @@ dist/
 
 # DB
 *.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.db
+*.db-wal
+*.db-shm
+.tools/
+.hypothesis/
+.ruff_cache/
+playwright-report/
+test-results/
+.coverage
+htmlcov/
+*.secret
+*.lock.runtime
 mysql-data/
 
 # IDE / OS
