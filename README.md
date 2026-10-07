@@ -1,31 +1,133 @@
 # API-Shield
-A compact security layer that detects and blocks malicious API activity using rate limits, IP monitoring, automated bans, and fuzz‑testing, all managed through a central admin panel.
 
-## Rate Limiting 
-Restrict the number of requests allowed per IP within a defined time window to prevent overload or brute force attempts.
-## Abuse Detection and Auto Ban
-Identify suspicious patterns such as repeated failed logins, malformed payloads, replay attacks, or rapid request bursts. Automatically ban IPs that violate defined rules.
-## Input Validation and Fuzz Testing
-Test the API against malformed, random, or unexpected inputs to uncover vulnerabilities in authentication, authorization, and data handling. 
-## Control Panel and UI
-Master control panel to manage the program and configure settings
-- Run fuzzing test
-- View logs
-- Configure rate limits and throttling
-- Configure and manage bans and durations
+A security gateway that sits in front of an API and applies rate limiting,
+IP bans, and input validation before forwarding requests through — tested
+against a small fake target API built for this project.
 
-## Security Logging
-Record security events, including rate limit triggers, bans, and fuzzing results, for later review and analysis.
+This is a scoped-down, hand-written version of the original idea: one
+gateway protecting one demo target, not a general-purpose product. The
+goal is to actually understand and implement the five security features,
+not to build production infrastructure.
+
+## Architecture
+
+```
+Client --> Gateway (backend/)  --> Target API (backend/target/)
+              |                         |
+          shield.db                 target.db
+       (logs, bans, rules)       (users, orders)
+
+Admin dashboard (frontend/, built later) --> Gateway's /admin/* routes
+```
+
+The gateway and the target API are two separate FastAPI apps, each with
+its own SQLite database, running on different ports. The gateway doesn't
+know or care about the target's internals — it just forwards approved
+requests and relays the response.
 
 ## Setup
-npm dev:ts - start server for front end development
-npm build - build frontend
-npm start - host frontend
-npm typecheck - typecheck frontend
 
-### install dependecies
+**Requirements:** Python 3.11+
+
+```bash
+cd backend
 python -m venv .venv
+source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+cp .env.example .env
+```
 
-npm dev:py - run python server in dev mode
-npm start:py - run python server in production mode
+## Running it
+
+You need **two terminals** — the target API and the gateway are separate apps.
+
+**Terminal 1 — fake target API:**
+```bash
+cd backend
+uvicorn target.target_main:app --reload --port 8001
+```
+
+**Terminal 2 — gateway:**
+```bash
+cd backend
+uvicorn main:app --reload --port 8000
+```
+
+Check both are up:
+```bash
+curl http://127.0.0.1:8001/health
+curl http://127.0.0.1:8000/health
+```
+
+## Running tests
+
+```bash
+cd backend
+pytest
+```
+
+## Project structure
+
+```
+backend/
+├── main.py                  # gateway entry point
+├── requirements.txt
+├── .env.example
+├── app/
+│   ├── core/config.py       # settings loaded from .env
+│   ├── db/database.py       # sqlite3 connection + table creation
+│   ├── security/
+│   │   ├── rate_limiter.py  # per-IP request counting
+│   │   ├── ban_manager.py   # check/add bans
+│   │   └── validator.py     # Pydantic request models
+│   ├── logging/logger.py    # writes to requests_log
+│   ├── routes/
+│   │   ├── gateway.py       # the protected endpoints
+│   │   ├── auth.py          # admin login
+│   │   └── admin.py         # dashboard API (logs, bans, settings, fuzz)
+│   └── fuzzing/fuzz_runner.py
+├── target/                  # the fake app being protected
+│   ├── target_main.py
+│   └── target_db.py
+└── tests/                   # one test file per task below
+frontend/                    # not built yet — see frontend/README.md
+```
+
+## Task breakdown
+
+Each file above has a `[Task Bxx]` docstring pointing back to this list.
+Check a task's corresponding test file in `backend/tests/` to see what
+"done" means for it.
+
+| Task | Owns | Depends on |
+|---|---|---|
+| **B00** — Project skeleton & config | `main.py`, `core/config.py` | — |
+| **B01** — Database layer | `db/database.py` | B00 |
+| **B02** — Fake target API | `target/` | — (independent, good first task) |
+| **B03** — Rate limiter | `security/rate_limiter.py` | B01 |
+| **B04** — Ban manager | `security/ban_manager.py` | B01 |
+| **B05** — Input validation | `security/validator.py` | B02 |
+| **B06** — Logging | `logging/logger.py` | B01 (already implemented — see note below) |
+| **B07** — Gateway routes | `routes/gateway.py` | B02–B06 |
+| **B08** — Admin auth | `routes/auth.py` | B01 |
+| **B09** — Admin API + fuzzing | `routes/admin.py`, `fuzzing/fuzz_runner.py` | B07, B08 |
+
+**Note:** `logging/logger.py` (B06) is already fully implemented as a
+reference example of what "done" looks like for a small, self-contained
+module — the rest of `security/` and `routes/` are stubs with `TODO`
+comments and `NotImplementedError` for the group to fill in.
+
+**Suggested 4-person split:** one person on B00/B01, one on B02 (fully
+independent — good to start immediately), one on B03/B04, one on B05 —
+then B07 (integration) goes to whoever finishes first, and B08/B09 split
+between the remaining two.
+
+## Admin API contract (for the future frontend)
+
+Once B08/B09 are implemented, the dashboard will call:
+
+- `POST /admin/login` — returns a session token/cookie
+- `GET /admin/logs` — recent request history
+- `GET /admin/bans` / `POST /admin/bans` / `DELETE /admin/bans/{id}`
+- `GET /admin/settings` / `PUT /admin/settings`
+- `POST /admin/fuzz` — runs the fuzz suite, returns pass/fail per case
