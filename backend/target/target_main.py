@@ -6,7 +6,7 @@ nothing about the gateway -- it just behaves like a real app would.
 The gateway (app/routes/gateway.py) forwards approved requests here.
 
 Run standalone with:
-    uvicorn target.target_main:app --reload --port 8001
+    python -m uvicorn target.target_main:app --app-dir [YOUR FULL PATH TO BACKEND FOLDER] --reload --port 8001
 
 Suggested endpoints to implement (adjust to taste):
     POST /login   -- check username/password against a users table
@@ -18,7 +18,7 @@ being graded.
 """
 from fastapi import FastAPI
 
-from target.target_db import create_target_tables
+from target.target_db import create_target_tables,fill_user_table,test_user_table
 
 app = FastAPI(title="Fake Target API")
 
@@ -26,6 +26,8 @@ app = FastAPI(title="Fake Target API")
 @app.on_event("startup")
 def on_startup():
     create_target_tables()
+    fill_user_table()
+    test_user_table()
 
 
 @app.get("/health")
