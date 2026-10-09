@@ -122,6 +122,35 @@ independent — good to start immediately), one on B03/B04, one on B05 —
 then B07 (integration) goes to whoever finishes first, and B08/B09 split
 between the remaining two.
 
+## Frontend task
+
+| Task | Owns | Depends on |
+|---|---|---|
+| **F00** — Frontend (AI-generated) | `frontend/` | B08, B09 (must be functionally complete, not just stubbed) |
+
+### F00 — Frontend (AI-generated)
+
+**Depends on:** B08 (admin auth) and B09 (admin API) being functionally
+complete — not just stubbed out.
+
+Generate the dashboard against the **actual, working** `/admin/*`
+endpoints (login, logs, bans, settings, fuzz) — not a guessed or assumed
+API shape. Don't start this task until B08/B09 can be tested with
+curl/Postman and return real data.
+
+**Why the dependency matters:** generating the frontend before the admin
+endpoints are solid means the AI will invent field names and assumptions
+about what a "ban" or "log" object looks like. Fixing that mismatch later
+costs more time than just waiting for the real contract to exist first.
+
+**Done when:**
+- Login, Logs, Bans, Settings, and Fuzzing pages all call the real
+  `/admin/*` endpoints — no mock/placeholder data left in.
+- Someone can log in, view real log rows, ban/revoke a real IP, and
+  trigger a real fuzz run, entirely through the UI.
+- Whoever owns this task can explain what the generated code does and
+  why — not just paste it in unreviewed.
+
 ## Admin API contract (for the future frontend)
 
 Once B08/B09 are implemented, the dashboard will call:
