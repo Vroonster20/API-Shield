@@ -18,7 +18,7 @@ being graded.
 """
 from fastapi import FastAPI
 
-from target.target_db import create_target_tables,fill_user_table,test_user_table
+from target.target_db import create_target_tables,fill_user_table,test_orders_table
 
 app = FastAPI(title="Fake Target API")
 
@@ -27,7 +27,7 @@ app = FastAPI(title="Fake Target API")
 def on_startup():
     create_target_tables()
     fill_user_table()
-    test_user_table()
+    test_orders_table()
 
 
 @app.get("/health")

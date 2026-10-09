@@ -8,5 +8,6 @@ httpx==0.27.2
 #database
 faker==40.41.0
 sqlite3==3.53.0
+pandas==3.0.6
 # testing
 pytest==8.3.3
