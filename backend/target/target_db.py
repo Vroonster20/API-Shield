@@ -7,6 +7,7 @@ import sqlite3
 from contextlib import contextmanager
 from faker import Faker
 import pandas as pd
+import bcrypt
 
 
 @contextmanager
@@ -29,22 +30,35 @@ def create_target_tables():
                 password TEXT NOT NULL
             )
         """)
-    df = pd.read_csv("./backend/target/source_files/orders.csv")
-    df = df.drop(columns=['Delivery Date', 'Cost Price Per Unit'])
-    with get_target_db() as conn:
+        df = pd.read_csv("./backend/target/source_files/orders.csv")
+        df = df.drop(columns=['Delivery Date', 'Cost Price Per Unit'])
         df.to_sql("orders",conn, if_exists='replace', index=False)
     
 def fill_user_table():
     fake = Faker()
-    fake_pass = '$2b$12$ssx98mIQ6enMuhSjQWgiUOEc0lcEfxpSeQND5HTckfkVku6yvx/AC'
     with get_target_db() as conn:
         for i in range(1,10):
             fake_user = fake.user_name()
+            gen_pass = fake.password(length=8)
+            salt = bcrypt.gensalt()
+            enc_pass = str.encode(gen_pass)
+            fake_pass = bcrypt.hashpw(enc_pass,salt)
             user_data = (fake_user,fake_pass)
             conn.execute("INSERT INTO users (username,password) VALUES (?,?)", user_data)
             conn.commit()
 
-# test to make sure tables are set up correctly
+def check_username(username:str):
+    with get_target_db() as conn:
+        user=conn.execute("SELECT username FROM users WHERE username = ?",(username,))
+        return user
+
+def retrieve_password(username:str):
+    with get_target_db() as conn:
+        passwd = conn.execute("SELECT password FROM users WHERE username = ?",(username,))
+        return passwd
+
+
+# tests to make sure tables are set up correctly
 def test_user_table():
     with get_target_db() as conn:
         rows = conn.execute("SELECT * FROM users")
