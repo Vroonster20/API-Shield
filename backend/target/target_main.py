@@ -16,9 +16,10 @@ Suggested endpoints to implement (adjust to taste):
 Keep this intentionally simple -- it's a demo target, not the project
 being graded.
 """
-from fastapi import FastAPI, HTTPException,status
+from fastapi import FastAPI, HTTPException,status,UploadFile,File
 from pydantic import BaseModel
 import bcrypt
+import filetype
 
 from target.target_db import create_target_tables,fill_user_table,get_target_db,check_username,retrieve_password
 
@@ -81,7 +82,7 @@ def login(credentials:LoginAttempt):
         )
 
     return {
-        "access_token": f"mock-token-for-{credentials.username}",
+        "access_token": "mock access token",
         "token_type": "bearer",
         "username": credentials.username
     }
@@ -122,5 +123,48 @@ def order(placed_order:Order):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Order insert failed"
             )
+@app.post("/coupons/upload")
+async def upload_coupon(file: UploadFile = File()):
+    MAX_FILE_SIZE = 2097512
+    accepted_file_types = ["image/png", "image/jpeg","image/jpg", "jpeg","jpg","png"]
+
+    file_info = filetype.guess(file)
+    if file_info is None:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Unable to determine file type",
+        )
+
+    detected_content_type = file_info.extension.lower()
+
+    if (
+        file.content_type not in accepted_file_types
+        or detected_content_type not in accepted_file_types
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Unsupported file type",
+        )
+    if file.size:
+        if file.size > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                detail="File is too large",
+            )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Could not determine size of the file"
+        )
+
+    contents = await file.read() 
+    
+    return {
+        "filename": file.filename,
+        "content_type": file.content_type,
+        "size": len(contents)
+    }
+    
+
 # TODO [B02]: add /login, /orders (or whatever endpoints fit your demo),
 # matching whatever Pydantic models you define in app/security/validator.py.

@@ -12,7 +12,7 @@ import bcrypt
 
 @contextmanager
 def get_target_db():
-    conn = sqlite3.connect("./backend/target/target_db.db")
+    conn = sqlite3.connect("./target/target_db.db")
     conn.row_factory = sqlite3.Row
     try:
         yield conn
@@ -30,7 +30,7 @@ def create_target_tables():
                 password TEXT NOT NULL
             )
         """)
-        df = pd.read_csv("./backend/target/source_files/orders.csv")
+        df = pd.read_csv("./target/source_files/orders.csv")
         df = df.drop(columns=['Delivery Date', 'Cost Price Per Unit'])
         df.to_sql("orders",conn, if_exists='replace', index=False)
     
