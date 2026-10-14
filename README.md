@@ -32,7 +32,7 @@ requests and relays the response.
 ```bash
 cd backend
 python -m venv .venv
-source .venv/bin/activate      # Windows: .venv\Scripts\activate
+.venv\Scripts\Activate.ps1      #Linux: source .venv/bin/activate      
 pip install -r requirements.txt
 cp .env.example .env
 ```
@@ -101,7 +101,7 @@ Check a task's corresponding test file in `backend/tests/` to see what
 
 | Task | Owns | Depends on |
 |---|---|---|
-| **B00** — Project skeleton & config | `main.py`, `core/config.py` | — |
+| **B00** — Project skeleton & config | `main.py`, `backend/app/core/config.py` | — |
 | **B01** — Database layer | `db/database.py` | B00 |
 | **B02** — Fake target API | `target/` | — (independent, good first task) |
 | **B03** — Rate limiter | `security/rate_limiter.py` | B01 |

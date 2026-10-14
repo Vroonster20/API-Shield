@@ -52,9 +52,23 @@ def create_tables():
             )
         """)
 
+def insert_ban(ip: str, banned_at: str, expires_at: str) -> None:
+    with get_db() as conn:
+        conn.execute(
+            "INSERT INTO bans (ip, banned_at, expires_at) VALUES (?, ?, ?)", 
+            (ip, banned_at, expires_at)
+        )
 
-# TODO [B01]: add small helper functions as needed, e.g.:
-#   insert_log(ip, path, decision, reason)
-#   insert_ban(ip, banned_at, expires_at)
-#   get_active_ban(ip)
-# Keep these here so other modules don't write raw SQL everywhere.
+def get_active_ban(ip: str, now_iso:str):
+    with get_db() as conn:
+        return conn.execute(
+            "SELECT * FROM bans WHERE ip = ? AND expires_at > ? "
+            "ORDER BY expires_at DESC LIMIT 1",
+            (ip, now_iso)
+        ).fetchone()
+
+def get_recent_logs(limit: int = 50):
+    with get_db() as conn:
+        return conn.execute(
+            "SELECT * FROM requests_log ORDER BY id DESC LIMIT ?", (limit,)
+        ).fetchall()
