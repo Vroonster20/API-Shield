@@ -16,12 +16,12 @@ Suggested endpoints to implement (adjust to taste):
 Keep this intentionally simple -- it's a demo target, not the project
 being graded.
 """
-from fastapi import FastAPI, HTTPException,status,UploadFile,File
+from fastapi import FastAPI, HTTPException,status,Request
 from pydantic import BaseModel
 import bcrypt
-import filetype
+from datetime import datetime
 
-from target.target_db import create_target_tables,fill_user_table,get_target_db,check_username,retrieve_password
+from target.target_db import create_target_tables,fill_user_table,get_target_db,check_username,retrieve_password,addwebhook
 
 app = FastAPI(title="Fake Target API")
 
@@ -42,9 +42,16 @@ class Order(BaseModel):
     p_id:int
     quantity:int
     price:float
+    payment_status:str
 
 class OrderResponse(BaseModel):
     message:str
+
+class PaymentPayload(BaseModel):
+    cust_id:int
+    o_id:int
+    amount:float
+    status:str
 
 @app.on_event("startup")
 def on_startup():
@@ -95,6 +102,11 @@ def get_orders(customer_id:int):
                     WHERE "Customer ID" = ?
                     """
         orders = conn.execute(query, (customer_id,))
+        if not orders:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Customer ID not found"
+            )
         for order in orders:
             o_id,date_placed, p_id, quantity, price = order
             customer_orders.append({
@@ -109,7 +121,7 @@ def get_orders(customer_id:int):
 @app.post("/orders",response_model=OrderResponse)
 def order(placed_order:Order):
     with get_target_db() as conn:
-        id_check = conn.execute('INSERT INTO orders ("Customer ID","Customer Status","Date Order was Placed","Order ID","Product ID","Quantity Ordered","Total Retail Price for This Order") VALUES (?,?,?,?,?,?,?) RETURNING "Customer ID"',
+        id_check = conn.execute('INSERT INTO orders ("Customer ID","Customer Status","Date Order was Placed","Order ID","Product ID","Quantity Ordered","Total Retail Price for This Order","Payment Status") VALUES (?,?,?,?,?,?,?) RETURNING "Customer ID"',
                      (placed_order.cust_id,placed_order.customer_status,placed_order.date_ordered,placed_order.o_id,placed_order.p_id,placed_order.quantity,placed_order.price,))
         id = id_check.fetchone()
         if id:
@@ -121,47 +133,43 @@ def order(placed_order:Order):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Order insert failed",
             )
-@app.post("/coupons/upload")
-async def upload_coupon(file: UploadFile = File()):
-    MAX_FILE_SIZE = 2097512
-    accepted_file_types = ["image/png", "image/jpeg","image/jpg", "jpeg","jpg","png"]
 
-    file_info = filetype.guess(file)
-    if file_info is None:
+@app.post("/payments/webhooks",status_code=status.HTTP_200_OK)
+async def payments_webhook(request:Request):
+
+    signature = request.headers.get("X-Provider-Signature")
+    if not signature:
         raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Unable to determine file type",
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Missing webhook signature"
         )
 
-    detected_content_type = file_info.extension.lower()
-
-    if (
-        file.content_type not in accepted_file_types
-        or detected_content_type not in accepted_file_types
-    ):
+    try:
+        data = await request.json()
+    except Exception:
         raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Unsupported file type",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid json format"
         )
-    if file.size:
-        if file.size > MAX_FILE_SIZE:
-            raise HTTPException(
-                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
-                detail="File is too large",
-            )
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Could not determine size of the file"
-        )
-
-    contents = await file.read() 
     
-    return {
-        "filename": file.filename,
-        "content_type": file.content_type,
-        "size": len(contents)
-    }
+    event_type = data.get("type")
+    if event_type=="payment_intent.succeeded":
+        payment_object = data.get("data").get("object")
+        timestamp = datetime.now()
+        with get_target_db() as conn:
+            id_found = conn.execute("SELECT event_id FROM webhooks WHERE event_id = ?",(data.get("data").get("object").get("id"),)).fetchone()
+        if not id_found:
+            addwebhook(payment_object.get("id"),timestamp)
+        else:
+            print("Duplicate recieved, ignoring......")
+
+
+    return {"status:accepted"}
+    
+
+    
+    
+    
     
 
 # TODO [B02]: add /login, /orders (or whatever endpoints fit your demo),

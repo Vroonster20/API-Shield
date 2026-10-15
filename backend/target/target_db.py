@@ -8,6 +8,7 @@ from contextlib import contextmanager
 from faker import Faker
 import pandas as pd
 import bcrypt
+import datetime
 
 
 @contextmanager
@@ -35,7 +36,15 @@ def create_target_tables():
         """)
         df = pd.read_csv("./target/source_files/orders.csv")
         df = df.drop(columns=['Delivery Date', 'Cost Price Per Unit'])
+        df.insert(loc=7,column='Payment Status',value=["UNPAID"])
         df.to_sql("orders",conn, if_exists='replace', index=False)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS webhooks (
+                            event_id INTEGER PRIMARY KEY,
+                            recieved_at TIMESTAMP
+                        )
+        """)
     
 def fill_user_table():
     fake = Faker()
@@ -53,6 +62,10 @@ def fill_user_table():
             user_data = (fake_user,fake_pass)
             conn.execute("INSERT INTO users (username,password) VALUES (?,?)", user_data)
             conn.commit()
+
+def addwebhook(event_id,recieved:datetime.datetime):
+    with get_target_db() as conn:
+        conn.execute("INSERT INTO webhooks (event_id,recieved_at) VALUES (?,?)",(event_id,recieved))
 
 def check_username(username:str):
     with get_target_db() as conn:
