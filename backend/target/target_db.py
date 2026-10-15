@@ -24,11 +24,14 @@ def get_target_db():
 def create_target_tables():
     with get_target_db() as conn:
         conn.execute("""
+            DROP TABLE IF EXISTS users;
+        """)
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL
-            )
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            username TEXT UNIQUE NOT NULL,
+                            password TEXT NOT NULL
+                        )
         """)
         df = pd.read_csv("./target/source_files/orders.csv")
         df = df.drop(columns=['Delivery Date', 'Cost Price Per Unit'])
@@ -37,6 +40,10 @@ def create_target_tables():
 def fill_user_table():
     fake = Faker()
     with get_target_db() as conn:
+        test_user = "johnsmith"
+        test_pass = b'$2b$12$2LB.ZIgKhyQVJIJqsXClDOT3JJ6MRMpGXgARt0nGXvyhpts9OrjLe'
+        test_data = (test_user,test_pass)
+        conn.execute("INSERT INTO users (username,password) VALUES (?,?)", test_data)
         for i in range(1,10):
             fake_user = fake.user_name()
             gen_pass = fake.password(length=8)
@@ -49,13 +56,13 @@ def fill_user_table():
 
 def check_username(username:str):
     with get_target_db() as conn:
-        user=conn.execute("SELECT username FROM users WHERE username = ?",(username,))
-        return user
+        user=conn.execute("SELECT username FROM users WHERE username = ?",(username,)).fetchone()
+        return user["username"]
 
 def retrieve_password(username:str):
     with get_target_db() as conn:
-        passwd = conn.execute("SELECT password FROM users WHERE username = ?",(username,))
-        return passwd
+        passwd = conn.execute("SELECT password FROM users WHERE username = ?",(username,)).fetchone()
+        return passwd["password"]
 
 
 # tests to make sure tables are set up correctly

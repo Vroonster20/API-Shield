@@ -6,7 +6,7 @@ nothing about the gateway -- it just behaves like a real app would.
 The gateway (app/routes/gateway.py) forwards approved requests here.
 
 Run standalone with:
-    python -m uvicorn target.target_main:app --app-dir [YOUR FULL PATH TO BACKEND FOLDER] --reload --port 8001
+    python -m uvicorn target.target_main:app --reload --port 8001
 
 Suggested endpoints to implement (adjust to taste):
     POST /login   -- check username/password against a users table
@@ -40,6 +40,7 @@ class Order(BaseModel):
     date_ordered:str
     o_id:int
     p_id:int
+    quantity:int
     price:float
 
 class OrderResponse(BaseModel):
@@ -65,13 +66,9 @@ def login(credentials:LoginAttempt):
             detail="incorrect username or password"
         )
     else:
-        pass_query = retrieve_password(credentials.username)
-        password = pass_query.fetchall()
-        if len(password) > 1:
-            print(f"ERROR singular user has {len(password)} password")
-            verified_password=False
-        else:
-            hashed_pass = password[0]  
+        hashed_pass = retrieve_password(user)
+        verified_password = False
+        if hashed_pass: 
             pt_bytes = str.encode(credentials.password)
             verified_password = bcrypt.checkpw(pt_bytes,hashed_pass)
 
@@ -94,8 +91,8 @@ def get_orders(customer_id:int):
         query = """
                     SELECT "Order ID","Date Order was placed",
                     "Product ID", "Quantity Ordered",
-                    "Total Retail Price for This Order FROM orders
-                    WHERE "Customer ID" = ?'
+                    "Total Retail Price for This Order" FROM "orders"
+                    WHERE "Customer ID" = ?
                     """
         orders = conn.execute(query, (customer_id,))
         for order in orders:
@@ -112,16 +109,17 @@ def get_orders(customer_id:int):
 @app.post("/orders",response_model=OrderResponse)
 def order(placed_order:Order):
     with get_target_db() as conn:
-        id_check = conn.execute('INSERT INTO orders ("Customer ID","Customer Status","Date Order Placed","Order ID","Product ID", "Quantity","Price") VALUES (?,?,?) RETURNS "Customer ID"',
-                     (placed_order.cust_id,placed_order.customer_status,placed_order.date_ordered,placed_order.o_id,placed_order.p_id,placed_order.price,))
-        if id_check:
+        id_check = conn.execute('INSERT INTO orders ("Customer ID","Customer Status","Date Order was Placed","Order ID","Product ID","Quantity Ordered","Total Retail Price for This Order") VALUES (?,?,?,?,?,?,?) RETURNING "Customer ID"',
+                     (placed_order.cust_id,placed_order.customer_status,placed_order.date_ordered,placed_order.o_id,placed_order.p_id,placed_order.quantity,placed_order.price,))
+        id = id_check.fetchone()
+        if id:
             return {
                 "message": "Order recieved successfully!"
             }
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Order insert failed"
+                detail="Order insert failed",
             )
 @app.post("/coupons/upload")
 async def upload_coupon(file: UploadFile = File()):
