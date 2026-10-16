@@ -36,7 +36,7 @@ def create_target_tables():
         """)
         df = pd.read_csv("./target/source_files/orders.csv")
         df = df.drop(columns=['Delivery Date', 'Cost Price Per Unit'])
-        df.insert(loc=7,column='Payment Status',value=["UNPAID"])
+        #df.insert(loc=7,column='Payment Status',value=["UNPAID"])
         df.to_sql("orders",conn, if_exists='replace', index=False)
 
         conn.execute("""

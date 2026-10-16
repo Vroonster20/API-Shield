@@ -136,12 +136,12 @@ def order(placed_order:Order):
 
 @app.post("/payments/webhooks",status_code=status.HTTP_200_OK)
 async def payments_webhook(request:Request):
-
+    #checks for signature from gateway
     signature = request.headers.get("X-Provider-Signature")
     if not signature:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="Missing webhook signature"
+            detail="Missing gateway signature"
         )
 
     try:
