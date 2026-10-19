@@ -3,19 +3,20 @@
 
 Run with: uvicorn main:app --reload
 """
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 import uvicorn
 
 from app.db.database import create_tables
 # from app.routes import gateway, auth, admin   # uncomment as each router is implemented
 
-app = FastAPI(title="API-Shield")
 
-
-@app.on_event("startup")
-def on_startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     create_tables()
-    
+    yield
+
+app = FastAPI(title="API-Shield", lifespan=lifespan)
 
 
 @app.get("/health")
