@@ -20,7 +20,7 @@ Example (adjust once B02's target endpoints are defined):
 from pydantic import BaseModel,ValidationError
 
 class PaymentDetails(BaseModel):
-    id:str
+    id:int
     object:str
     amount: int
     amount_recieved: int
@@ -29,13 +29,13 @@ class PaymentDetails(BaseModel):
     client_secret: str
 
 class PaymentBody(BaseModel):
-    id: str
+    id: int
     data: PaymentDetails
     request: PaymentRequest
     type : str
 
 class PaymentRequest(BaseModel):
-    id: str
+    id: int
     impotency_key: str
 
 class CustomerOrderRequest(BaseModel):
