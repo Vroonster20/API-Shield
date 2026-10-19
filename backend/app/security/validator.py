@@ -18,12 +18,13 @@ Example (adjust once B02's target endpoints are defined):
         quantity: int
 """
 from pydantic import BaseModel,ValidationError
+from typing import Type
 
 class PaymentDetails(BaseModel):
     id:int
     object:str
-    amount: int
-    amount_recieved: int
+    amount: float
+    amount_recieved: float
     currency: str
     status: str
     client_secret: str
@@ -58,13 +59,6 @@ class Order(BaseModel):
     p_id:int
     quantity:int
     price:float
-    payment_status:str
 
 class OrderResponse(BaseModel):
     message:str
-
-def validate_payload(base_class:BaseModel,data:dict):
-    try:
-        return base_class.model_validate(data)
-    except ValidationError as err:
-        raise Exception(err.errors())
