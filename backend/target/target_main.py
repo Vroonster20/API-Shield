@@ -21,6 +21,8 @@ from pydantic import BaseModel
 import bcrypt
 from datetime import datetime
 
+import uvicorn
+
 from target.target_db import create_target_tables,fill_user_table,get_target_db,check_username,retrieve_password,addwebhook
 
 app = FastAPI(title="Fake Target API")
@@ -174,3 +176,7 @@ async def payments_webhook(request:Request):
 
 # TODO [B02]: add /login, /orders (or whatever endpoints fit your demo),
 # matching whatever Pydantic models you define in app/security/validator.py.
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, port=8001)
