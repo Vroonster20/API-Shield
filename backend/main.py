@@ -29,4 +29,4 @@ def health():
 # app.include_router(admin.router, prefix="/admin")
 
 if __name__ == "__main__":
-    uvicorn.run(app, port=8000)
+    uvicorn.run(app, port=8000, reload=True)

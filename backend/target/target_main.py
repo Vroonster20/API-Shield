@@ -179,4 +179,4 @@ async def payments_webhook(request:Request):
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, port=8001)
+    uvicorn.run(app, port=8001, reload=True)
