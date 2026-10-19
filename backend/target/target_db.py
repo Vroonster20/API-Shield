@@ -50,7 +50,7 @@ def fill_user_table():
     fake = Faker()
     with get_target_db() as conn:
         test_user = "johnsmith"
-        test_pass = b'$2b$12$2LB.ZIgKhyQVJIJqsXClDOT3JJ6MRMpGXgARt0nGXvyhpts9OrjLe'
+        test_pass = b'$2b$12$.t3J/Xbu82Oyzde/5v/xGuUjvSIfw97Xz3pQnSvY1zm0RtFTfiQ4O'
         test_data = (test_user,test_pass)
         conn.execute("INSERT INTO users (username,password) VALUES (?,?)", test_data)
         for i in range(1,10):
@@ -67,7 +67,9 @@ def addwebhook(event_id,recieved:datetime.datetime):
     with get_target_db() as conn:
         conn.execute("INSERT INTO webhooks (event_id,recieved_at) VALUES (?,?)",(event_id,recieved))
 
-def check_username(username:str):
+def check_username(username:str|None):
+    if username is None:
+        raise ValueError("Username or Password cannot be None")
     with get_target_db() as conn:
         user=conn.execute("SELECT username FROM users WHERE username = ?",(username,)).fetchone()
         return user["username"]
