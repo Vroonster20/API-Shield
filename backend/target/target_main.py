@@ -10,7 +10,12 @@ Run standalone with:
 """
 from fastapi import FastAPI, HTTPException,status,Request
 import bcrypt
+import os
 from datetime import datetime
+from contextlib import asynccontextmanager
+import hmac
+import hashlib
+from dotenv import load_dotenv
 
 import uvicorn
 
@@ -19,10 +24,11 @@ from target.target_db import create_target_tables,fill_user_table,get_target_db,
 app = FastAPI(title="Fake Target API")
 
 
-@app.on_event("startup")
-def on_startup():
+@asynccontextmanager
+async def lifespan(app:FastAPI):
     create_target_tables()
     fill_user_table()
+    yield
 
 
 @app.get("/health")
@@ -32,6 +38,27 @@ def health():
 @app.post("/login")
 async def login(data:Request): 
     body = await data.json()
+
+    load_dotenv("./.env.example")
+    secret_key = os.getenv("SHARED_SECRET_KEY")
+    if secret_key is None:
+        raise ValueError("Critical Error: 'SHARED_SECRET_KEY' environment variable is not set.")
+    signature = data.headers.get("Gateway-Signature")
+    body_for_verification = await data.body()
+    computed_hmac = hmac.new(bytes.fromhex(secret_key),body_for_verification,hashlib.sha256).hexdigest()
+    if not signature:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Missing gateway signature"
+        )
+    else:
+        verify_hmac = hmac.compare_digest(computed_hmac,signature)
+        if not verify_hmac:
+            raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Signature not accepted"
+        )
+
     given_user = body.get("username")
     user = check_username(given_user)
     print("got username")
@@ -96,6 +123,27 @@ def get_orders(cust_id:int):
             
 @app.post("/db/orders")
 async def order(request:Request):
+
+    load_dotenv("./.env.example")
+    secret_key = os.getenv("SHARED_SECRET_KEY")
+    if secret_key is None:
+        raise ValueError("Critical Error: 'SHARED_SECRET_KEY' environment variable is not set.")
+    signature = request.headers.get("Gateway-Signature")
+    body_for_verification = await request.body()
+    computed_hmac = hmac.new(bytes.fromhex(secret_key),body_for_verification,hashlib.sha256).hexdigest()
+    if not signature:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Missing gateway signature"
+        )
+    else:
+        verify_hmac = hmac.compare_digest(computed_hmac,signature)
+        if not verify_hmac:
+            raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Signature not accepted"
+        )
+
     data = await request.json()
     with get_target_db() as conn:
         id_check = conn.execute('INSERT INTO orders ("Customer ID","Customer Status","Date Order was Placed","Order ID","Product ID","Quantity Ordered","Total Retail Price for This Order") VALUES (?,?,?,?,?,?,?) RETURNING "Customer ID"',
@@ -114,18 +162,29 @@ async def order(request:Request):
                 detail="Order insert failed",
             )
 
-@app.post("/payments/webhooks",status_code=status.HTTP_200_OK)
+@app.post("/webhooks/payments",status_code=status.HTTP_200_OK)
 async def payments_webhook(request:Request):
     
     #checks for signature from gateway
-    """
-    signature = request.headers.get("X-Provider-Signature")
+    load_dotenv("./.env.example")
+    secret_key = os.getenv("SHARED_SECRET_KEY")
+    if secret_key is None:
+        raise ValueError("Critical Error: 'SHARED_SECRET_KEY' environment variable is not set.")
+    signature = request.headers.get("Gateway-Signature")
+    body = await request.body()
+    computed_hmac = hmac.new(bytes.fromhex(secret_key),body,hashlib.sha256).hexdigest()
     if not signature:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, 
             detail="Missing gateway signature"
         )
-    """
+    else:
+        verify_hmac = hmac.compare_digest(computed_hmac,signature)
+        if not verify_hmac:
+            raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST, 
+                        detail="Signature not accepted"
+                    )
     try:
         data = await request.json()
     except Exception:

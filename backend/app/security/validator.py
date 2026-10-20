@@ -4,8 +4,7 @@ Input validation.
 Defines Pydantic models that match the ACTUAL request shapes of the
 fake target API's endpoints (see backend/target/target_main.py).
 """
-from pydantic import BaseModel,ValidationError
-from typing import Type
+from pydantic import BaseModel
 
 class PaymentDetails(BaseModel):
     id:int
