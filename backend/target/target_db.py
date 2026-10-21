@@ -1,5 +1,5 @@
 """
-[Task B02] Separate, minimal DB for the fake target app -- intentionally
+Separate, minimal DB for the fake target app -- intentionally
 not shared with the gateway's db/database.py. Keeps the target fully
 independent, as a real protected app would be.
 """
@@ -36,7 +36,6 @@ def create_target_tables():
         """)
         df = pd.read_csv("./target/source_files/orders.csv")
         df = df.drop(columns=['Delivery Date', 'Cost Price Per Unit'])
-        #df.insert(loc=7,column='Payment Status',value=["UNPAID"])
         df.to_sql("orders",conn, if_exists='replace', index=False)
 
         conn.execute("""
@@ -50,7 +49,7 @@ def fill_user_table():
     fake = Faker()
     with get_target_db() as conn:
         test_user = "johnsmith"
-        test_pass = b'$2b$12$2LB.ZIgKhyQVJIJqsXClDOT3JJ6MRMpGXgARt0nGXvyhpts9OrjLe'
+        test_pass = b'$2b$12$.t3J/Xbu82Oyzde/5v/xGuUjvSIfw97Xz3pQnSvY1zm0RtFTfiQ4O'
         test_data = (test_user,test_pass)
         conn.execute("INSERT INTO users (username,password) VALUES (?,?)", test_data)
         for i in range(1,10):
@@ -67,7 +66,9 @@ def addwebhook(event_id,recieved:datetime.datetime):
     with get_target_db() as conn:
         conn.execute("INSERT INTO webhooks (event_id,recieved_at) VALUES (?,?)",(event_id,recieved))
 
-def check_username(username:str):
+def check_username(username:str|None):
+    if username is None:
+        raise ValueError("Username or Password cannot be None")
     with get_target_db() as conn:
         user=conn.execute("SELECT username FROM users WHERE username = ?",(username,)).fetchone()
         return user["username"]
@@ -90,6 +91,3 @@ def test_orders_table():
         rows = conn.execute('SELECT "Customer ID" FROM orders WHERE "Customer Status"=="Silver"')
         for row in rows:
             print(row)
-
-
-# TODO [B02]: optionally seed a demo user here for testing.
