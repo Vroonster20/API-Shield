@@ -95,7 +95,7 @@ async def login(data:Request):
     }
 
 @app.get("/orders/{customer_id}")
-def get_orders(cust_id:int):
+def get_orders(customer_id:int):
     customer_orders = []
     with get_target_db() as conn:
         query = """
@@ -104,7 +104,7 @@ def get_orders(cust_id:int):
                     "Total Retail Price for This Order" FROM "orders"
                     WHERE "Customer ID" = ?
                     """
-        orders = conn.execute(query, (cust_id,))
+        orders = conn.execute(query, (customer_id,))
         if not orders:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

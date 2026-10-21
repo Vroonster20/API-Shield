@@ -36,17 +36,17 @@ async def gateway_login(request: Request,model: LoginAttempt):
     if is_banned(ip):
         log_event(ip,"/login","blocked","banned")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="IP banned")
-    if is_allowed(ip):
+    if not is_allowed(ip):
         log_event(ip,"/login","blocked","rate-limited")
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="IP ratelimited")
+    body = await request.body()
     try:
-        model.model_validate(request.body())
+        model.model_validate_json(body)
     except ValidationError:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,detail="Unable to process request")
     log_event(ip,"/login","allowed")
 
     #FORWARDING Request to target API
-    body = await request.body()
 
     load_dotenv("./.env.example")
 
@@ -77,20 +77,21 @@ async def gateway_login(request: Request,model: LoginAttempt):
         headers=response.headers
     )
     
-@router.get("/order")
-async def gateway_get_orders(request:Request):
+@router.get("/orders/{customer_id}")
+async def gateway_get_orders(customer_id:int,request:Request):
+    cust_id = customer_id
     if not request.client:
             raise ValueError("No client found for API request")
     ip = request.client.host
     if is_banned(ip):
         log_event(ip,"/orders","blocked","banned")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="IP banned")
-    if is_allowed(ip):
+    if not is_allowed(ip):
         log_event(ip,"/orders","blocked","rate-limited")
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="IP ratelimited")
     log_event(ip,"/orders","allowed")
 
-    body = await request.body()
+    body =b''
 
     load_dotenv("./.env.example")
 
@@ -104,11 +105,11 @@ async def gateway_get_orders(request:Request):
     headers.pop("host", None)
     headers["Gateway-Signature"] = signature
 
-    target_url = "http://127.0.0.1:8001/orders"
+    target_url = f"http://127.0.0.1:8001/orders/{cust_id}"
 
     request_params = request.query_params
 
-    response = await client.get(target_url,params=request_params)
+    response = await client.get(target_url)
 
     return Response(
         content=response.content,
@@ -125,17 +126,17 @@ async def gateway_place_orders(request:Request, model:Order):
     if is_banned(ip):
         log_event(ip,"/db/orders","blocked","banned")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="IP banned")
-    if is_allowed(ip):
+    if not is_allowed(ip):
         log_event(ip,"/db/orders","blocked","rate-limited")
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="IP ratelimited")
     log_event(ip,"/db/orders","allowed")
+    body = await request.body()
+
     try:
-        model.model_validate(request.body())
+        model.model_validate_json(body)
     except ValidationError:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,detail="Unable to process request")
     log_event(ip,"/db/orders","allowed")
-
-    body = await request.body()
 
     load_dotenv("./.env.example")
 
@@ -149,7 +150,7 @@ async def gateway_place_orders(request:Request, model:Order):
     headers.pop("host", None)
     headers["Gateway-Signature"] = signature
 
-    target_url = "http://127.0.0.1:8001/login"
+    target_url = "http://127.0.0.1:8001/db/orders"
 
     forwarded_request = client.build_request(
         method = request.method,
@@ -173,18 +174,16 @@ async def gateway_payments(request:Request, model:PaymentBody):
     if is_banned(ip):
         log_event(ip,"/orders","blocked","banned")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="IP banned")
-    if is_allowed(ip):
+    if not is_allowed(ip):
         log_event(ip,"/orders","blocked","rate-limited")
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="IP ratelimited")
     log_event(ip,"/orders","allowed")
-
+    body = await request.body()
     try:
-        model.model_validate(request.body())
+        model.model_validate_json(body)
     except ValidationError:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,detail="Unable to process request")
     log_event(ip,"/webhooks/payments","allowed")
-
-    body = await request.body()
 
     load_dotenv("./.env.example")
 
@@ -198,7 +197,7 @@ async def gateway_payments(request:Request, model:PaymentBody):
     headers.pop("host", None)
     headers["Gateway-Signature"] = signature
 
-    target_url = "http://127.0.0.1:8001/orders"
+    target_url = "http://127.0.0.1:8001/webhooks/payments"
 
     forwarded_request = client.build_request(
         method = request.method,
@@ -214,17 +213,4 @@ async def gateway_payments(request:Request, model:PaymentBody):
         status_code=response.status_code,
         headers = response.headers
         
-    ) 
-# TODO [B07]: add one route per protected target endpoint, e.g.:
-#
-# @router.post("/login")
-# async def gateway_login(request: Request, body: LoginRequest):
-#     ip = request.client.host
-#     if is_banned(ip):
-#         log_event(ip, "/login", "blocked", "banned")
-#         raise HTTPException(status_code=403, detail="Banned")
-#     if not is_allowed(ip):
-#         log_event(ip, "/login", "blocked", "rate_limit")
-#         raise HTTPException(status_code=429, detail="Rate limited")
-#     log_event(ip, "/login", "allowed")
-#     # forward to settings.target_api_url + "/login" via httpx, return response
+    )
