@@ -4,23 +4,28 @@
 Check/add bans by IP, stored in the `bans` table (see db/database.py).
 A ban is "active" if expires_at is in the future.
 """
-from app.db.database import get_db
+from datetime import datetime, timedelta, timezone
 
-# TODO [B04]: implement using get_db() and simple SQL, e.g.:
-#
-# def is_banned(ip: str) -> bool:
-#     with get_db() as conn:
-#         row = conn.execute(
-#             "SELECT 1 FROM bans WHERE ip = ? AND expires_at > ? LIMIT 1",
-#             (ip, now_iso),
-#         ).fetchone()
-#         return row is not None
+from app.core.config import settings
+from app.db.database import get_active_ban, insert_ban
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 def is_banned(ip: str) -> bool:
-    raise NotImplementedError
+    """Return whether the IP has an unexpired ban."""
+    now_iso = _utc_now().isoformat(timespec="microseconds")
+    return get_active_ban(ip, now_iso) is not None
 
 
 def ban_ip(ip: str) -> None:
     """Ban an IP for settings.ban_duration_seconds from now."""
-    raise NotImplementedError
+    now = _utc_now()
+    expires_at = now + timedelta(seconds=settings.ban_duration_seconds)
+    insert_ban(
+        ip,
+        now.isoformat(timespec="microseconds"),
+        expires_at.isoformat(timespec="microseconds"),
+    )
