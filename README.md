@@ -44,13 +44,13 @@ You need **two terminals** — the target API and the gateway are separate apps.
 **Terminal 1 — fake target API:**
 ```bash
 cd backend
-uvicorn target.target_main:app --reload --port 8001
+python main.py
 ```
 
 **Terminal 2 — gateway:**
 ```bash
-cd backend
-uvicorn main:app --reload --port 8000
+cd backend/target
+python target_main.py
 ```
 
 Check both are up:
@@ -63,7 +63,7 @@ curl http://127.0.0.1:8000/health
 
 ```bash
 cd backend
-pytest
+python -m pytest
 ```
 
 ## Project structure
