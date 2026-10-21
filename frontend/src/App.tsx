@@ -78,6 +78,7 @@ const settingLabels: Record<SettingKey, { label: string; help: string }> = {
 };
 
 const defaultApiUrl = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const loginEnabled = import.meta.env.VITE_ENABLE_LOGIN === "true";
 
 function getErrorMessage(error: unknown) {
   if (error instanceof ApiError) return error.message;
@@ -618,7 +619,7 @@ export default function App() {
     );
   }, [logs, search]);
 
-  if (!token) {
+  if (loginEnabled && !token) {
     return (
       <LoginScreen
         apiUrl={apiUrl}
@@ -691,20 +692,22 @@ export default function App() {
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-30" />
                 <span className="relative inline-flex size-2 rounded-full bg-emerald-400" />
               </span>
-              Authenticated session
+              {token ? "Authenticated session" : "Preview mode"}
             </div>
             <p className="mt-2 truncate text-[11px] text-slate-500">
               {normalizedApiUrl}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={signOut}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] text-slate-400 transition-colors hover:bg-white/[0.05] hover:text-white"
-          >
-            <LogOut className="size-4" />
-            Sign out
-          </button>
+          {token && (
+            <button
+              type="button"
+              onClick={signOut}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] text-slate-400 transition-colors hover:bg-white/[0.05] hover:text-white"
+            >
+              <LogOut className="size-4" />
+              Sign out
+            </button>
+          )}
         </div>
       </aside>
 
@@ -733,7 +736,7 @@ export default function App() {
           <div className="flex items-center gap-3">
             <div className="hidden items-center gap-2 rounded-full border bg-white px-3 py-1.5 text-[11px] text-muted-foreground sm:flex">
               <span className="size-1.5 rounded-full bg-emerald-500" />
-              Gateway session active
+              {token ? "Gateway session active" : "Dashboard preview"}
             </div>
             <Button
               variant="outline"
@@ -745,18 +748,26 @@ export default function App() {
               <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
               <span className="hidden sm:inline">Refresh</span>
             </Button>
-            <button
-              type="button"
-              onClick={signOut}
-              aria-label="Sign out"
-              className="flex size-8 items-center justify-center rounded-full bg-violet-100 text-xs font-semibold text-violet-700"
-            >
-              <LogOut className="size-4" />
-            </button>
+            {token && (
+              <button
+                type="button"
+                onClick={signOut}
+                aria-label="Sign out"
+                className="flex size-8 items-center justify-center rounded-full bg-violet-100 text-xs font-semibold text-violet-700"
+              >
+                <LogOut className="size-4" />
+              </button>
+            )}
           </div>
         </header>
 
         <main className="mx-auto max-w-[1440px] px-4 py-7 sm:px-7 sm:py-9 lg:px-9">
+          {!token && (
+            <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              Login is temporarily disabled. This dashboard is in preview mode;
+              API data and actions require login to be enabled.
+            </div>
+          )}
           {error && <Notice onDismiss={() => setError("")}>{error}</Notice>}
           {pageNotice && (
             <div className="mb-5 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
