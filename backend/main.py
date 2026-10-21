@@ -10,6 +10,7 @@ import uvicorn
 from app.db.database import create_tables
 from app.routes import gateway, auth, admin   # uncomment as each router is implemented
 
+@asynccontextmanager
 async def lifespan(app: FastAPI):
     create_tables()
     yield
