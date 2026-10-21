@@ -28,7 +28,7 @@ from dotenv import load_dotenv
 router = APIRouter()
 client = httpx.AsyncClient()
 
-@router.get("/login")
+@router.post("/login")
 async def gateway_login(request: Request,model: LoginAttempt):
     if not request.client:
         raise ValueError("No client found for API request")
@@ -118,7 +118,7 @@ async def gateway_get_orders(request:Request):
     )    
 
 @router.post("/db/orders")
-async def gateway_place_orders(request:Request):
+async def gateway_place_orders(request:Request, model:Order):
     if not request.client:
             raise ValueError("No client found for API request")
     ip = request.client.host
@@ -128,6 +128,11 @@ async def gateway_place_orders(request:Request):
     if is_allowed(ip):
         log_event(ip,"/db/orders","blocked","rate-limited")
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="IP ratelimited")
+    log_event(ip,"/db/orders","allowed")
+    try:
+        model.model_validate(request.body())
+    except ValidationError:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,detail="Unable to process request")
     log_event(ip,"/db/orders","allowed")
 
     body = await request.body()
@@ -161,7 +166,7 @@ async def gateway_place_orders(request:Request):
         headers=response.headers
     )
 @router.post("/webhooks/payments")
-async def gateway_payments(request:Request):
+async def gateway_payments(request:Request, model:PaymentBody):
     if not request.client:
             raise ValueError("No client found for API request")
     ip = request.client.host
@@ -172,6 +177,12 @@ async def gateway_payments(request:Request):
         log_event(ip,"/orders","blocked","rate-limited")
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="IP ratelimited")
     log_event(ip,"/orders","allowed")
+
+    try:
+        model.model_validate(request.body())
+    except ValidationError:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,detail="Unable to process request")
+    log_event(ip,"/webhooks/payments","allowed")
 
     body = await request.body()
 
