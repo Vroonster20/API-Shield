@@ -44,13 +44,15 @@ You need **two terminals** — the target API and the gateway are separate apps.
 **Terminal 1 — fake target API:**
 ```bash
 cd backend
+source .venv/bin/activate
 python main.py
 ```
 
 **Terminal 2 — gateway:**
 ```bash
-cd backend/target
-python target_main.py
+cd backend
+source .venv/bin/activate
+python target/main.py
 ```
 
 Check both are up:
