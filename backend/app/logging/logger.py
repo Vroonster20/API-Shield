@@ -1,5 +1,5 @@
 """
-[Task B06] Security event logging.
+Security event logging.
 
 One function, called from the gateway on every request (allowed or
 blocked), that writes a row to requests_log.

@@ -1,7 +1,5 @@
 """
-[Task B03] Tests for the rate limiter.
-Write these BEFORE or WHILE implementing rate_limiter.py -- they define
-what "done" means for this task.
+Tests for the rate limiter.
 """
 from app.security.rate_limiter import is_allowed
 from app.core.config import settings

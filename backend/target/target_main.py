@@ -206,15 +206,6 @@ async def payments_webhook(request:Request):
 
 
     return {"status:accepted"}
-    
-
-    
-    
-    
-    
-
-# TODO [B02]: add /login, /orders (or whatever endpoints fit your demo),
-# matching whatever Pydantic models you define in app/security/validator.py.
 
 
 if __name__ == "__main__":

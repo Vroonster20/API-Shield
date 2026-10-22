@@ -1,5 +1,5 @@
 """
-[Task B00] App entry point.
+App entry point.
 
 Run with: uvicorn main:app --reload
 """

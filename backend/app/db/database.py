@@ -1,12 +1,10 @@
 """
-[Task B01] Database layer — plain sqlite3, no ORM.
+ SQLite3 Database layer
 
 Tables:
   - requests_log: every request the gateway sees (allowed or blocked)
   - bans:         currently/previously banned IPs
-  - rules:        configurable settings (rate limit, ban duration) -- optional,
-                   may just read from app.core.config instead if you don't need
-                   runtime-editable settings for the demo.
+  - rules:        configurable settings (rate limit, ban duration) -- optional
 """
 from datetime import datetime, timedelta, timezone
 import sqlite3

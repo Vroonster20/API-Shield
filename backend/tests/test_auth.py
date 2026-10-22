@@ -1,5 +1,5 @@
 """
-[Task B08] Tests for admin auth (login + require_admin).
+Tests for admin auth (login + require_admin).
 """
 from unittest.mock import patch
 

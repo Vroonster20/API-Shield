@@ -1,13 +1,11 @@
 """
-[Task B08] Admin auth.
+Admin auth.
 
 Single seeded admin user (from settings.admin_username / admin_password).
 Issue a session cookie or token on successful login. Provide a FastAPI
 dependency (e.g. require_admin) that other admin routes can depend on
 to reject unauthenticated requests.
 
-Doesn't need production-grade hashing/CSRF for this project -- just
-needs to not be wide open.
 """
 from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials

@@ -1,4 +1,4 @@
-"""[Task B04] Tests for the ban manager."""
+"""Tests for the ban manager."""
 from datetime import datetime, timedelta, timezone
 
 import pytest

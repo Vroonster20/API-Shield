@@ -1,5 +1,5 @@
 """
-[Task B04] Ban management.
+Ban management.
 
 Check/add bans by IP, stored in the `bans` table (see db/database.py).
 A ban is "active" if expires_at is in the future.

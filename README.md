@@ -98,7 +98,7 @@ backend/
 │   ├── target_main.py
 │   └── target_db.py
 └── tests/                   # one test file per task below
-frontend/                    # not built yet — see frontend/README.md
+frontend/                    # see frontend/README.md
 ```
 
 ## Task breakdown
@@ -120,11 +120,6 @@ Check a task's corresponding test file in `backend/tests/` to see what
 | **B08** — Admin auth | `routes/auth.py` | B01 |
 | **B09** — Admin API + fuzzing | `routes/admin.py`, `fuzzing/fuzz_runner.py` | B07, B08 |
 
-**Note:** `logging/logger.py` (B06) is already fully implemented as a
-reference example of what "done" looks like for a small, self-contained
-module — the rest of `security/` and `routes/` are stubs with `TODO`
-comments and `NotImplementedError` for the group to fill in.
-
 **Suggested 4-person split:** one person on B00/B01, one on B02 (fully
 independent — good to start immediately), one on B03/B04, one on B05 —
 then B07 (integration) goes to whoever finishes first, and B08/B09 split
@@ -134,30 +129,20 @@ between the remaining two.
 
 | Task | Owns | Depends on |
 |---|---|---|
-| **F00** — Frontend (AI-generated) | `frontend/` | B08, B09 (must be functionally complete, not just stubbed) |
+| **F00** — Frontend| `frontend/` | B08, B09 (must be functionally complete, not just stubbed) |
 
-### F00 — Frontend (AI-generated)
+### F00 — Frontend
 
-**Depends on:** B08 (admin auth) and B09 (admin API) being functionally
-complete — not just stubbed out.
-
-Generate the dashboard against the **actual, working** `/admin/*`
+Create the dashboard against the **actual, working** `/admin/*`
 endpoints (login, logs, bans, settings, fuzz) — not a guessed or assumed
 API shape. Don't start this task until B08/B09 can be tested with
 curl/Postman and return real data.
-
-**Why the dependency matters:** generating the frontend before the admin
-endpoints are solid means the AI will invent field names and assumptions
-about what a "ban" or "log" object looks like. Fixing that mismatch later
-costs more time than just waiting for the real contract to exist first.
 
 **Done when:**
 - Login, Logs, Bans, Settings, and Fuzzing pages all call the real
   `/admin/*` endpoints — no mock/placeholder data left in.
 - Someone can log in, view real log rows, ban/revoke a real IP, and
   trigger a real fuzz run, entirely through the UI.
-- Whoever owns this task can explain what the generated code does and
-  why — not just paste it in unreviewed.
 
 ## Admin API contract (for the future frontend)
 
