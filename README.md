@@ -148,7 +148,21 @@ Pydantic models define the expected field names and types for each protected req
 
 ### 3.8 Gateway routes (B07)
 
-The integration point. Each protected route mirrors a target endpoint and runs the pipeline from Section 2.1, forwarding approved requests to the target with `httpx`. **[FILL IN: list the protected routes and any details of how forwarding works.]**
+The integration point. Each protected route mirrors a target endpoint and runs the pipeline from Section 2.1, forwarding approved requests to the target with `httpx`.
+
+Protected routes:
+- `POST /gateway/login`
+- `GET /gateway/orders`
+- `POST /gateway/db/orders`
+- `POST /gateway/webhooks/payments`
+
+Gateway operations:
+- **Validates IP address and request body.** Checks if IP has been ratelimited or banned and validates request
+body against Pydantic Models.
+- **Appends signature to header.** Adds HMAC signature to header so that the target API knows that the request
+has been through the gateway. The target API will reject any request without the signature.
+- **Forwards request to target API.** Request is forwarded to target API using httpx.
+- **Returns response from target API.** Response from target API is returned to the user
 
 ### 3.9 Admin authentication (B08)
 
@@ -193,7 +207,8 @@ A TypeScript web interface with pages for login, logs, bans, settings, and fuzzi
 | Rate limiter | `test_rate_limit.py` | Requests up to the limit pass; the next is denied; the window resets; after a reset the limit is enforced again; IPs are counted independently |
 | Ban manager | `test_bans.py` | IPs start unbanned; bans block only the banned IP; bans last the configured duration and expire on time |
 | Validation | `test_validation.py` | Valid payment payloads pass; order payloads with a missing field or a wrong type are rejected |
-| Gateway | `test_gateway.py` | **[FILL IN]** |
+| Gateway | `test_gateway.py` | Banned IPs are blocked; Ratelimited IP's are logged and blocked; Allowed Requests
+recieve a response|
 | Admin auth | `test_auth.py` | Correct login returns a token; wrong credentials return 401; wrong username and wrong password give identical responses; missing and invalid tokens return 401; a valid token reaches protected routes; tokens are valid just before expiry and rejected after |
 | Admin API and fuzzing | **[FILL IN]** | **[FILL IN]** |
 
@@ -240,6 +255,7 @@ A TypeScript web interface with pages for login, logs, bans, settings, and fuzzi
 - **Demo-grade admin auth.** There is one admin account with no password hashing. That's acceptable for a local demo, but it would need a proper user store before any real deployment.
 - **The target enforces its own business rules.** The gateway checks the shape of a request, not whether a user owns the order they're modifying. Authorization stays in the protected API.
 - **No HTTPS.** Everything runs locally over HTTP, so a real deployment would need TLS at the edge.
+- **Vulnerable to replay attacks** - no timestamps are attached to the gateway signatures so attackers could intercept and rerun requests with valid signatures
 
 ### 6.2 Future work
 
