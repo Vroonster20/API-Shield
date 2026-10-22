@@ -153,10 +153,57 @@ costs more time than just waiting for the real contract to exist first.
 
 ## Admin API contract (for the future frontend)
 
-Once B08/B09 are implemented, the dashboard will call:
+The dashboard can call:
 
 - `POST /admin/login` — returns a session token/cookie
 - `GET /admin/logs` — recent request history
 - `GET /admin/bans` / `POST /admin/bans` / `DELETE /admin/bans/{id}`
 - `GET /admin/settings` / `PUT /admin/settings`
 - `POST /admin/fuzz` — runs the fuzz suite, returns pass/fail per case
+
+### B09 usage
+
+All routes above except login require `Authorization: Bearer <access_token>`.
+Use the token returned by `POST /admin/login`.
+
+- Logs return `{"logs": [...]}`. Optional `?limit=50` accepts 1–500 rows, newest first.
+- Bans return `{"bans": [...]}` with active rows and their IDs. Create one with
+  `{"ip": "192.0.2.1"}`. Delete by ID; success returns 204, a missing ID returns 404.
+- Settings GET and PUT use the same three fields. PUT requires all three:
+
+```json
+{
+  "rate_limit_requests": 10,
+  "rate_limit_window_seconds": 60,
+  "ban_duration_seconds": 300
+}
+```
+
+Values must be integers from 1 to 10000, 86400, and 604800 respectively.
+Settings are saved in the `rules` table and restored on startup. They apply to
+the running process; existing bans keep their original expiration times.
+The demo uses one gateway process, so run without multiple workers.
+
+Fuzzing runs ten fixed cases against `http://127.0.0.1:8000`, never the target
+directly. Start the gateway on port 8000 and the target on port 8001.
+The response contains `results`, `passed`, and `total`; each case contains
+`name`, `expected`, `actual`, and `passed`. Connection errors include `error`
+and use `actual: null`. Each request has a five-second timeout.
+
+The cases cover health, login validation, invalid JSON, missing order/payment
+fields, and a login with valid fields but incorrect credentials. Login cases
+use the current gateway's GET route; change them if B07 switches to POST.
+The health case only checks availability. The login control expects 401 from
+the target, not a successful sign-in. Existing bans and rate counters affect
+the run, and 403, 429, or 500 responses do not count as passing validation.
+The runner does not clear protection state. B07's existing routing, rate-limit,
+and validation bugs can therefore produce failed cases.
+
+Run the B09 tests from `backend/`:
+
+```bash
+python -m pytest tests/test_admin.py tests/test_fuzz.py
+```
+
+These tests use temporary databases and mocked HTTP responses for the fuzz
+runner. They do not require a running target or modify the demo database.

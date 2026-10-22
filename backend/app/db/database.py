@@ -72,3 +72,32 @@ def get_recent_logs(limit: int = 50):
         return conn.execute(
             "SELECT * FROM requests_log ORDER BY id DESC LIMIT ?", (limit,)
         ).fetchall()
+
+
+def get_current_bans(now_iso: str):
+    with get_db() as conn:
+        return conn.execute(
+            "SELECT * FROM bans WHERE expires_at > ? ORDER BY id DESC",
+            (now_iso,),
+        ).fetchall()
+
+
+def delete_ban(ban_id: int) -> bool:
+    with get_db() as conn:
+        result = conn.execute("DELETE FROM bans WHERE id = ?", (ban_id,))
+        return result.rowcount > 0
+
+
+def get_rules() -> dict:
+    with get_db() as conn:
+        rows = conn.execute("SELECT key, value FROM rules").fetchall()
+        return {row["key"]: row["value"] for row in rows}
+
+
+def save_rules(values: dict):
+    with get_db() as conn:
+        for key, value in values.items():
+            conn.execute(
+                "INSERT OR REPLACE INTO rules (key, value) VALUES (?, ?)",
+                (key, str(value)),
+            )

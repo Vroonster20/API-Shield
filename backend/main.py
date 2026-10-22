@@ -13,15 +13,10 @@ from app.routes import gateway, auth, admin   # uncomment as each router is impl
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_tables()
+    admin.load_saved_settings()
     yield
 
 app = FastAPI(title="API-Shield", lifespan=lifespan)
-
-@app.on_event("startup")
-def on_startup():
-    create_tables()
-    yield
-
 
 @app.get("/health")
 def health():

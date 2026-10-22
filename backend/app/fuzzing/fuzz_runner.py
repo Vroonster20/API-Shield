@@ -11,16 +11,49 @@ crashed.
 """
 import httpx
 
-# TODO [B09]: define fixed test cases, e.g.:
-# FUZZ_CASES = [
-#     {"name": "missing_field", "payload": {}, "expect_status": 422},
-#     {"name": "wrong_type", "payload": {"product_id": "not_a_number"}, "expect_status": 422},
-#     {"name": "oversized_payload", "payload": {"note": "x" * 100000}, "expect_status": 422},
-#     {"name": "valid_control", "payload": {"product_id": 1, "quantity": 2}, "expect_status": 200},
-#     # ... more cases
-# ]
+# Login currently uses GET in the gateway. Update these if B07 changes it.
+FUZZ_CASES = [
+    {"name": "health_control", "method": "GET", "path": "/health",
+     "expected": 200, "body": {}},
+    {"name": "missing_login_fields", "method": "GET", "path": "/login",
+     "expected": 422, "body": {"json": {}}},
+    {"name": "missing_password", "method": "GET", "path": "/login",
+     "expected": 422, "body": {"json": {"username": "test"}}},
+    {"name": "numeric_username", "method": "GET", "path": "/login",
+     "expected": 422, "body": {"json": {"username": 123, "password": "test"}}},
+    {"name": "null_password", "method": "GET", "path": "/login",
+     "expected": 422, "body": {"json": {"username": "test", "password": None}}},
+    {"name": "invalid_json", "method": "GET", "path": "/login",
+     "expected": 422, "body": {"content": "{", "headers": {"Content-Type": "application/json"}}},
+    {"name": "missing_order_fields", "method": "POST", "path": "/db/orders",
+     "expected": 422, "body": {"json": {}}},
+    {"name": "order_is_a_list", "method": "POST", "path": "/db/orders",
+     "expected": 422, "body": {"json": []}},
+    {"name": "missing_payment_fields", "method": "POST", "path": "/webhooks/payments",
+     "expected": 422, "body": {"json": {}}},
+    {"name": "valid_format_wrong_credentials", "method": "GET", "path": "/login",
+     "expected": 401, "body": {"json": {
+         "username": "b09_nonexistent_user", "password": "b09_wrong_password",
+     }}},
+]
 
 
 def run_fuzz_suite(gateway_base_url: str) -> list[dict]:
     """Returns a list of {name, expected, actual, passed} dicts."""
-    raise NotImplementedError
+    results = []
+    with httpx.Client(base_url=gateway_base_url, timeout=5.0, trust_env=False) as client:
+        for case in FUZZ_CASES:
+            result = {
+                "name": case["name"],
+                "expected": case["expected"],
+                "actual": None,
+                "passed": False,
+            }
+            try:
+                response = client.request(case["method"], case["path"], **case["body"])
+                result["actual"] = response.status_code
+                result["passed"] = response.status_code == case["expected"]
+            except httpx.RequestError as error:
+                result["error"] = str(error)
+            results.append(result)
+    return results
