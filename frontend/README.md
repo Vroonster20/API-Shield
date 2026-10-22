@@ -16,10 +16,14 @@ the gateway URL on the login screen, or set `VITE_API_BASE_URL` before starting
 the frontend.
 
 Sign in with the gateway admin credentials. The login request sends
-`username` and `password` as query parameters to `POST /admin/login`, matching
-the FastAPI handler shape described in the backend task. Cookie-based sessions
-are included automatically; if the login response contains a `token`,
+`username` and `password` as a JSON body to `POST /admin/login`. The login
+screen is enabled by default; set `VITE_ENABLE_LOGIN=false` only to return to
+the unauthenticated preview mode. Cookie-based sessions are included
+automatically; if the login response contains a `token`,
 `session_token`, or `access_token`, the dashboard sends it as a Bearer token.
+
+For a frontend hosted on another origin, add that origin to the backend's
+`CORS_ALLOWED_ORIGINS` JSON list in `backend/.env` and restart the backend.
 
 The pages use these gateway endpoints:
 
@@ -37,7 +41,7 @@ expects log and ban collections as arrays (or under `logs`, `bans`, `items`,
 or `results`), and fuzz results as an array (or under `results`, `cases`,
 or `items`).
 
-The admin login, admin routes, and fuzz runner in the current backend are
-stubs. Until those backend tasks are implemented and the gateway includes the
-routers, sign-in and dashboard requests will show the gateway's actual error
-instead of fabricated data.
+The backend implements the admin login, logs, bans, and settings endpoints.
+Fuzz testing requires the separate `/admin/fuzz` endpoint, which is not
+implemented yet. Errors from the gateway are shown directly rather than
+replaced with fabricated data.
