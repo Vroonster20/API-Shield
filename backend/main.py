@@ -5,17 +5,33 @@ Run with: uvicorn main:app --reload
 """
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from app.db.database import create_tables
+from app.core.config import settings
+from app.db.database import create_tables, get_rules
 from app.routes import gateway, auth, admin   # uncomment as each router is implemented
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_tables()
+    saved_rules = get_rules()
+    for key in ("rate_limit_requests", "rate_limit_window_seconds", "ban_duration_seconds"):
+        if key in saved_rules:
+            value = int(saved_rules[key])
+            if value < 1:
+                raise ValueError(f"Stored setting {key} must be greater than zero.")
+            setattr(settings, key, value)
     yield
 
 app = FastAPI(title="API-Shield", lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origin_regex=settings.cors_allowed_origin_regex,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
+)
 
 @app.on_event("startup")
 def on_startup():

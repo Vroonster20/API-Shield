@@ -20,11 +20,11 @@ def is_banned(ip: str) -> bool:
     return get_active_ban(ip, now_iso) is not None
 
 
-def ban_ip(ip: str) -> None:
+def ban_ip(ip: str) -> int:
     """Ban an IP for settings.ban_duration_seconds from now."""
     now = _utc_now()
     expires_at = now + timedelta(seconds=settings.ban_duration_seconds)
-    insert_ban(
+    return insert_ban(
         ip,
         now.isoformat(timespec="microseconds"),
         expires_at.isoformat(timespec="microseconds"),
