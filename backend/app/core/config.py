@@ -17,12 +17,9 @@ class Settings(BaseSettings):
     admin_username: str = "admin"
     admin_password: str = "changeme"
 
-    cors_allowed_origins: list[str] = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:4173",
-        "http://127.0.0.1:4173",
-    ]
+    cors_allowed_origin_regex: str = (
+        r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
+    )
 
     class Config:
         env_file = ".env"
