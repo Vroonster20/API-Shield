@@ -9,12 +9,13 @@ Tables:
 from datetime import datetime, timedelta, timezone
 import sqlite3
 from contextlib import contextmanager
+from collections.abc import Generator
 
 from app.core.config import settings
 
 
 @contextmanager
-def get_db():
+def get_db() -> Generator[sqlite3.Connection]:
     conn = sqlite3.connect(settings.db_path)
     conn.row_factory = sqlite3.Row
     try:

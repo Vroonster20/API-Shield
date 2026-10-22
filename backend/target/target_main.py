@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 
 import uvicorn
 
-from target_db import create_target_tables,fill_user_table,get_target_db,check_username,retrieve_password,addwebhook
+from target.target_db import create_target_tables,fill_user_table,get_target_db,check_username,retrieve_password,addwebhook
 
 app = FastAPI(title="Fake Target API")
 
