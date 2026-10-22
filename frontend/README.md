@@ -46,6 +46,8 @@ fixed set of safe requests to the gateway's own health and routing/validation
 routes, then display the expected and actual HTTP status for each case.
 Dashboard tables and settings are populated from the gateway API; empty
 states are shown when the gateway has no records yet.
+For a new empty database, the backend seeds a few example logs and active
+bans; these rows are visibly labeled `Demo` and use reserved example IPs.
 
 The fuzz runner targets `GATEWAY_BASE_URL` from the backend environment
 (default `http://127.0.0.1:8000`). Set it to the gateway's reachable URL if

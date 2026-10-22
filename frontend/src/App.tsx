@@ -1032,6 +1032,15 @@ const logColumns = [
   { key: "ip", label: "IP address" },
   { key: "path", label: "Request path" },
   {
+    key: "source",
+    label: "Source",
+    render: (row: ApiRecord) => (
+      <Badge variant={row.source === "demo" ? "secondary" : "outline"}>
+        {row.source === "demo" ? "Demo" : "Live"}
+      </Badge>
+    ),
+  },
+  {
     key: "decision",
     label: "Decision",
     render: (row: ApiRecord) => (
@@ -1080,7 +1089,7 @@ function LogsPage({
               {search ? " matching your search" : " returned by the API"}
             </CardDescription>
           </div>
-          <Badge variant="outline">Live API data</Badge>
+          <Badge variant="outline">Gateway records</Badge>
         </CardHeader>
         <CardContent className="p-0">
           <DataTable
@@ -1161,13 +1170,22 @@ function BansPage({
               {rows.length} {rows.length === 1 ? "record" : "records"} returned by the gateway.
             </CardDescription>
           </div>
-          <Badge variant="outline">Live API data</Badge>
+          <Badge variant="outline">Gateway records</Badge>
         </CardHeader>
         <CardContent className="p-0">
           <DataTable
             rows={rows}
             columns={[
               { key: "ip", label: "IP address" },
+              {
+                key: "source",
+                label: "Source",
+                render: (row) => (
+                  <Badge variant={row.source === "demo" ? "secondary" : "outline"}>
+                    {row.source === "demo" ? "Demo" : "Live"}
+                  </Badge>
+                ),
+              },
               { key: "banned_at", label: "Banned at" },
               { key: "expires_at", label: "Expires at" },
               {

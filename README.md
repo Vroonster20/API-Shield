@@ -25,6 +25,12 @@ its own SQLite database, running on different ports. The gateway doesn't
 know or care about the target's internals — it just forwards approved
 requests and relays the response.
 
+On first startup, the gateway adds a small set of clearly labeled demo
+request logs (including an upstream timeout) and active bans using reserved
+example IP addresses, but only when its logs and bans tables are empty.
+Disable this with `SEED_DEMO_DATA=false` in `backend/.env`. Existing records
+are never replaced or supplemented with demo rows.
+
 ## Setup
 
 **Requirements:** Python 3.11+
