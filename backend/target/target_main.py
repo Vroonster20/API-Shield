@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 
 import uvicorn
 
-from target.target_db import create_target_tables,fill_user_table,get_target_db,check_username,retrieve_password,addwebhook
+from target_db import create_target_tables,fill_user_table,get_target_db,check_username,retrieve_password,addwebhook
 
 app = FastAPI(title="Fake Target API")
 
@@ -218,4 +218,4 @@ async def payments_webhook(request:Request):
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, port=8001, reload=True)
+    uvicorn.run("target_main:app", port=8001, reload=True)

@@ -2,33 +2,62 @@
 Integration tests for the gateway routes -- these exercise
 the full chain (ban check -> rate limit -> validation -> forward -> log).
 """
-import app.security.ban_manager as ban_manager
-from fastapi import testclient
+from unittest.mock import AsyncMock
+
+import httpx
+from fastapi.testclient import TestClient
+
+from app.routes import gateway
 from main import app
-from app.db.database import create_tables
-
-client = testclient.TestClient(app)
 
 
-def test_banned_ip_is_blocked_before_rate_limit_check():
-    create_tables()
-    ban_manager.ban_ip("127.0.0.1")
-    print(ban_manager.is_banned("127.0.0.1"))
-    payload = {
-        "username": "johnsmith",
-        "password": "Super_Secret_Password123!"
-    }
-    response = client.post("/gateway/login",json=payload)
-    print(response.status_code)
+client = TestClient(app)
+
+
+def test_banned_ip_is_blocked_before_rate_limit_check(monkeypatch):
+    rate_limit = AsyncMock()
+    monkeypatch.setattr(gateway, "is_banned", lambda ip: True)
+    monkeypatch.setattr(gateway, "is_allowed", rate_limit)
+
+    response = client.get("/order")
 
     assert response.status_code == 403
+    rate_limit.assert_not_called()
 
 
-def test_rate_limited_request_is_logged():
-    pass
+def test_allowed_request_is_logged_and_forwarded(monkeypatch):
+    events = []
+    monkeypatch.setattr(gateway, "is_banned", lambda ip: False)
+    monkeypatch.setattr(gateway, "is_allowed", lambda ip: True)
+    monkeypatch.setattr(
+        gateway,
+        "log_event",
+        lambda *event: events.append(event),
+    )
+    forward = AsyncMock(return_value=httpx.Response(200, content=b"[]"))
+    monkeypatch.setattr(gateway.client, "get", forward)
+
+    response = client.get("/order")
+
+    assert response.status_code == 200
+    forward.assert_awaited_once()
+    assert events == [("testclient", "/orders", "allowed")]
 
 
-def test_valid_request_reaches_target_and_is_logged():
-    pass
+def test_rate_limited_request_is_logged_and_not_forwarded(monkeypatch):
+    events = []
+    monkeypatch.setattr(gateway, "is_banned", lambda ip: False)
+    monkeypatch.setattr(gateway, "is_allowed", lambda ip: False)
+    monkeypatch.setattr(
+        gateway,
+        "log_event",
+        lambda *event: events.append(event),
+    )
+    forward = AsyncMock()
+    monkeypatch.setattr(gateway.client, "get", forward)
 
-test_banned_ip_is_blocked_before_rate_limit_check()
+    response = client.get("/order")
+
+    assert response.status_code == 429
+    forward.assert_not_awaited()
+    assert events == [("testclient", "/orders", "blocked", "rate-limited")]
