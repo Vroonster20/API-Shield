@@ -79,11 +79,10 @@ export async function login(
   username: string,
   password: string,
 ): Promise<{ token: string | null }> {
-  const params = new URLSearchParams({ username, password });
   const payload = await request<unknown>(
     baseUrl,
-    `/admin/login?${params.toString()}`,
-    { method: "POST" },
+    "/admin/login",
+    { method: "POST", body: JSON.stringify({ username, password }) },
   );
 
   let token: string | null = null;
