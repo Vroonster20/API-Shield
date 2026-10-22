@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     ban_duration_seconds: int = 300
 
     target_api_url: str = "http://127.0.0.1:8001"
+    gateway_base_url: str = "http://127.0.0.1:8000"
 
     admin_username: str = "admin"
     admin_password: str = "changeme"

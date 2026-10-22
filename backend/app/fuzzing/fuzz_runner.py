@@ -1,26 +1,74 @@
-"""
-[Task B09] Fuzz test runner.
+"""Exercise safe validation and routing cases against the gateway."""
 
-Fires a fixed set of ~10 hardcoded bad requests at the GATEWAY's own
-routes (not the target directly -- you're testing that the gateway's
-validation catches them) and returns pass/fail per case.
-
-A "pass" means the gateway correctly rejected a bad request (or
-correctly accepted a good one, for a control case) -- not that nothing
-crashed.
-"""
 import httpx
 
-# TODO [B09]: define fixed test cases, e.g.:
-# FUZZ_CASES = [
-#     {"name": "missing_field", "payload": {}, "expect_status": 422},
-#     {"name": "wrong_type", "payload": {"product_id": "not_a_number"}, "expect_status": 422},
-#     {"name": "oversized_payload", "payload": {"note": "x" * 100000}, "expect_status": 422},
-#     {"name": "valid_control", "payload": {"product_id": 1, "quantity": 2}, "expect_status": 200},
-#     # ... more cases
-# ]
+
+FUZZ_CASES = (
+    {
+        "name": "health_check_control",
+        "method": "GET",
+        "path": "/health",
+        "expected_status": 200,
+    },
+    {
+        "name": "missing_login_fields",
+        "method": "GET",
+        "path": "/login",
+        "expected_status": 422,
+    },
+    {
+        "name": "missing_login_password",
+        "method": "GET",
+        "path": "/login?username=fuzz-user",
+        "expected_status": 422,
+    },
+    {
+        "name": "missing_login_username",
+        "method": "GET",
+        "path": "/login?password=fuzz-password",
+        "expected_status": 422,
+    },
+    {
+        "name": "unsupported_login_method",
+        "method": "POST",
+        "path": "/login",
+        "expected_status": 405,
+    },
+    {
+        "name": "unknown_route",
+        "method": "GET",
+        "path": "/__api_shield_fuzz_unknown__",
+        "expected_status": 404,
+    },
+)
 
 
-def run_fuzz_suite(gateway_base_url: str) -> list[dict]:
-    """Returns a list of {name, expected, actual, passed} dicts."""
-    raise NotImplementedError
+async def run_fuzz_suite(
+    gateway_base_url: str,
+    *,
+    transport: httpx.AsyncBaseTransport | None = None,
+) -> list[dict[str, str | int | bool]]:
+    """Return actual outcomes for a fixed set of safe gateway requests."""
+    results: list[dict[str, str | int | bool]] = []
+    async with httpx.AsyncClient(
+        base_url=gateway_base_url.rstrip("/"),
+        timeout=5.0,
+        follow_redirects=False,
+        transport=transport,
+    ) as client:
+        for case in FUZZ_CASES:
+            try:
+                response = await client.request(case["method"], case["path"])
+                actual: str | int = response.status_code
+            except httpx.RequestError as error:
+                actual = f"request error: {error}"
+
+            results.append(
+                {
+                    "name": case["name"],
+                    "expected": case["expected_status"],
+                    "actual": actual,
+                    "passed": actual == case["expected_status"],
+                }
+            )
+    return results

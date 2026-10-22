@@ -41,7 +41,12 @@ expects log and ban collections as arrays (or under `logs`, `bans`, `items`,
 or `results`), and fuzz results as an array (or under `results`, `cases`,
 or `items`).
 
-The backend implements the admin login, logs, bans, and settings endpoints.
-Fuzz testing requires the separate `/admin/fuzz` endpoint, which is not
-implemented yet. Errors from the gateway are shown directly rather than
-replaced with fabricated data.
+The backend implements all of the endpoints above. Fuzz runs send a small,
+fixed set of safe requests to the gateway's own health and routing/validation
+routes, then display the expected and actual HTTP status for each case.
+Dashboard tables and settings are populated from the gateway API; empty
+states are shown when the gateway has no records yet.
+
+The fuzz runner targets `GATEWAY_BASE_URL` from the backend environment
+(default `http://127.0.0.1:8000`). Set it to the gateway's reachable URL if
+the backend listens on a different address or port.

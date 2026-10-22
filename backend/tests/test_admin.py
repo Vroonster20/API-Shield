@@ -4,6 +4,7 @@ import pytest
 from app.core.config import settings
 from app.db import database
 from app.logging.logger import log_event
+from app.routes import admin as admin_routes
 from app.routes.auth import ACTIVE_SESSIONS
 from main import app
 
@@ -44,6 +45,34 @@ def test_admin_endpoints_require_authentication():
     for path in ("/admin/logs", "/admin/bans", "/admin/settings"):
         response = client.get(path)
         assert response.status_code == 401
+    assert client.post("/admin/fuzz").status_code == 401
+
+
+def test_fuzz_endpoint_runs_authenticated_gateway_suite(monkeypatch):
+    called_with: list[str] = []
+    monkeypatch.setattr(settings, "gateway_base_url", "http://gateway.internal:9000")
+
+    async def fake_fuzz_suite(base_url: str):
+        called_with.append(base_url)
+        return [
+            {
+                "name": "health_check_control",
+                "expected": 200,
+                "actual": 200,
+                "passed": True,
+            }
+        ]
+
+    monkeypatch.setattr(admin_routes, "run_fuzz_suite", fake_fuzz_suite)
+
+    response = client.post(
+        "/admin/fuzz",
+        headers={**admin_headers(), "Host": "untrusted.example"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()[0]["passed"] is True
+    assert called_with == ["http://gateway.internal:9000"]
 
 
 def test_logs_returns_recent_request_records(tmp_path, monkeypatch):

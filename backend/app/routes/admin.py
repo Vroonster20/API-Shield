@@ -25,6 +25,7 @@ from app.db.database import (
     get_rules,
     save_rules,
 )
+from app.fuzzing.fuzz_runner import run_fuzz_suite
 from app.routes.auth import require_admin
 from app.security.ban_manager import ban_ip
 
@@ -110,3 +111,10 @@ def update_settings(
     for key, value in updated.items():
         setattr(settings, key, value)
     return updated
+
+
+@router.post("/fuzz")
+async def fuzz_gateway(
+    _: dict = Depends(require_admin),
+):
+    return await run_fuzz_suite(settings.gateway_base_url)
