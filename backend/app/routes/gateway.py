@@ -1,16 +1,8 @@
 """
-[Task B07] Gateway routes -- the integration point.
+Gateway routes -- the integration point.
 
-These endpoints mirror the fake target's real endpoints (see
-backend/target/target_main.py). Each one should, in order:
-  1. check app.security.ban_manager.is_banned(ip)      -> 403 if banned
-  2. check app.security.rate_limiter.is_allowed(ip)     -> 429 if rate-limited
-  3. validate the request body (app.security.validator models) -> 422 if invalid
-  4. app.logging.logger.log_event(...) the outcome
-  5. forward the request to settings.target_api_url and return its response
+These endpoints mirror the fake target's real endpoints 
 
-Keep this file as the "wiring" layer -- the actual logic lives in the
-security/ and logging/ modules so it's independently testable.
 """
 from fastapi import APIRouter, Request, Response, HTTPException,status
 from pydantic import ValidationError
@@ -33,6 +25,7 @@ async def gateway_login(request: Request,model: LoginAttempt):
     if not request.client:
         raise ValueError("No client found for API request")
     ip = request.client.host
+    print(is_banned(ip))
     if is_banned(ip):
         log_event(ip,"/login","blocked","banned")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="IP banned")
@@ -47,8 +40,13 @@ async def gateway_login(request: Request,model: LoginAttempt):
     log_event(ip,"/login","allowed")
 
     #FORWARDING Request to target API
+    current_file = os.path.abspath(__file__)
 
-    load_dotenv("./.env.example")
+    dir_lvl_1 = os.path.dirname(current_file)
+    dir_lvl_2 = os.path.dirname(dir_lvl_1) 
+    backend_dir = os.path.dirname(dir_lvl_2)
+    env_path = os.path.join(backend_dir, '.env.example')
+    load_dotenv(dotenv_path=env_path)
 
     hex_secret = os.getenv("SHARED_SECRET_KEY")
 
@@ -93,7 +91,13 @@ async def gateway_get_orders(customer_id:int,request:Request):
 
     body =b''
 
-    load_dotenv("./.env.example")
+    current_file = os.path.abspath(__file__)
+
+    dir_lvl_1 = os.path.dirname(current_file)
+    dir_lvl_2 = os.path.dirname(dir_lvl_1) 
+    backend_dir = os.path.dirname(dir_lvl_2)
+    env_path = os.path.join(backend_dir, '.env.example')
+    load_dotenv(dotenv_path=env_path)
 
     hex_secret = os.getenv("SHARED_SECRET_KEY")
 
@@ -138,7 +142,13 @@ async def gateway_place_orders(request:Request, model:Order):
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,detail="Unable to process request")
     log_event(ip,"/db/orders","allowed")
 
-    load_dotenv("./.env.example")
+    current_file = os.path.abspath(__file__)
+
+    dir_lvl_1 = os.path.dirname(current_file)
+    dir_lvl_2 = os.path.dirname(dir_lvl_1) 
+    backend_dir = os.path.dirname(dir_lvl_2)
+    env_path = os.path.join(backend_dir, '.env.example')
+    load_dotenv(dotenv_path=env_path)
 
     hex_secret = os.getenv("SHARED_SECRET_KEY")
 
@@ -185,7 +195,13 @@ async def gateway_payments(request:Request, model:PaymentBody):
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,detail="Unable to process request")
     log_event(ip,"/webhooks/payments","allowed")
 
-    load_dotenv("./.env.example")
+    current_file = os.path.abspath(__file__)
+
+    dir_lvl_1 = os.path.dirname(current_file)
+    dir_lvl_2 = os.path.dirname(dir_lvl_1) 
+    backend_dir = os.path.dirname(dir_lvl_2)
+    env_path = os.path.join(backend_dir, '.env.example')
+    load_dotenv(dotenv_path=env_path)
 
     hex_secret = os.getenv("SHARED_SECRET_KEY")
 
