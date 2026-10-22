@@ -36,7 +36,7 @@ async def gateway_login(request: Request,model: LoginAttempt):
     if is_banned(ip):
         log_event(ip,"/login","blocked","banned")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="IP banned")
-    if is_allowed(ip):
+    if not is_allowed(ip):
         log_event(ip,"/login","blocked","rate-limited")
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="IP ratelimited")
     try:
@@ -85,7 +85,7 @@ async def gateway_get_orders(request:Request):
     if is_banned(ip):
         log_event(ip,"/orders","blocked","banned")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="IP banned")
-    if is_allowed(ip):
+    if not is_allowed(ip):
         log_event(ip,"/orders","blocked","rate-limited")
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="IP ratelimited")
     log_event(ip,"/orders","allowed")
@@ -125,7 +125,7 @@ async def gateway_place_orders(request:Request):
     if is_banned(ip):
         log_event(ip,"/db/orders","blocked","banned")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="IP banned")
-    if is_allowed(ip):
+    if not is_allowed(ip):
         log_event(ip,"/db/orders","blocked","rate-limited")
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="IP ratelimited")
     log_event(ip,"/db/orders","allowed")
@@ -168,7 +168,7 @@ async def gateway_payments(request:Request):
     if is_banned(ip):
         log_event(ip,"/orders","blocked","banned")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="IP banned")
-    if is_allowed(ip):
+    if not is_allowed(ip):
         log_event(ip,"/orders","blocked","rate-limited")
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="IP ratelimited")
     log_event(ip,"/orders","allowed")

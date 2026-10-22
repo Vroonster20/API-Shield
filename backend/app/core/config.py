@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     db_path: str = "shield.db"
+    seed_demo_data: bool = True
 
     rate_limit_requests: int = 10
     rate_limit_window_seconds: int = 60

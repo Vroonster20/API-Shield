@@ -9,12 +9,14 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from app.core.config import settings
-from app.db.database import create_tables, get_rules
+from app.db.database import create_tables, get_rules, seed_demo_data
 from app.routes import gateway, auth, admin   # uncomment as each router is implemented
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_tables()
+    if settings.seed_demo_data:
+        seed_demo_data()
     saved_rules = get_rules()
     for key in ("rate_limit_requests", "rate_limit_window_seconds", "ban_duration_seconds"):
         if key in saved_rules:
