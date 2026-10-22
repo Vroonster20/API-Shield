@@ -1,8 +1,12 @@
 """
 App configuration, loaded from environment variables (.env).
 """
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings,SettingsConfigDict
+from pydantic import SecretStr
+from pathlib import Path
 
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+ENV_PATH = BASE_DIR / ".env"
 
 class Settings(BaseSettings):
     db_path: str = "shield.db"
@@ -23,8 +27,13 @@ class Settings(BaseSettings):
         r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
     )
 
+    shared_secret_key: SecretStr = SecretStr("")
+
+
     class Config:
-        env_file = ".env"
+        env_file=ENV_PATH
+        env_file_encoding="utf-8"
+        extra="ignore"
 
 
 settings = Settings()
