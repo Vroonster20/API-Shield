@@ -52,12 +52,20 @@ def create_tables():
             )
         """)
 
-def insert_ban(ip: str, banned_at: str, expires_at: str) -> None:
+def insert_ban(ip: str, banned_at: str, expires_at: str) -> int:
     with get_db() as conn:
-        conn.execute(
+        cursor = conn.execute(
             "INSERT INTO bans (ip, banned_at, expires_at) VALUES (?, ?, ?)", 
             (ip, banned_at, expires_at)
         )
+        return cursor.lastrowid
+
+def get_ban(ban_id: int):
+    with get_db() as conn:
+        return conn.execute(
+            "SELECT * FROM bans WHERE id = ?",
+            (ban_id,),
+        ).fetchone()
 
 def get_active_ban(ip: str, now_iso:str):
     with get_db() as conn:
@@ -67,8 +75,33 @@ def get_active_ban(ip: str, now_iso:str):
             (ip, now_iso)
         ).fetchone()
 
+def get_active_bans(now_iso: str):
+    with get_db() as conn:
+        return conn.execute(
+            "SELECT * FROM bans WHERE expires_at > ? ORDER BY expires_at DESC",
+            (now_iso,),
+        ).fetchall()
+
+def delete_ban(ban_id: int) -> bool:
+    with get_db() as conn:
+        cursor = conn.execute("DELETE FROM bans WHERE id = ?", (ban_id,))
+        return cursor.rowcount > 0
+
 def get_recent_logs(limit: int = 50):
     with get_db() as conn:
         return conn.execute(
             "SELECT * FROM requests_log ORDER BY id DESC LIMIT ?", (limit,)
         ).fetchall()
+
+def get_rules() -> dict[str, str]:
+    with get_db() as conn:
+        rows = conn.execute("SELECT key, value FROM rules").fetchall()
+        return {row["key"]: row["value"] for row in rows}
+
+def save_rules(values: dict[str, int]) -> None:
+    with get_db() as conn:
+        conn.executemany(
+            "INSERT INTO rules (key, value) VALUES (?, ?) "
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            [(key, str(value)) for key, value in values.items()],
+        )
