@@ -1,5 +1,5 @@
 """
-[Task B00] App configuration, loaded from environment variables (.env).
+App configuration, loaded from environment variables (.env).
 """
 from pydantic_settings import BaseSettings
 

@@ -11,6 +11,7 @@ venv/
 
 # Env / secrets
 .env
+.env.example
 
 # Node (for frontend, added later)
 node_modules/
