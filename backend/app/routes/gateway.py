@@ -1,16 +1,8 @@
 """
-[Task B07] Gateway routes -- the integration point.
+Gateway routes -- the integration point.
 
-These endpoints mirror the fake target's real endpoints (see
-backend/target/target_main.py). Each one should, in order:
-  1. check app.security.ban_manager.is_banned(ip)      -> 403 if banned
-  2. check app.security.rate_limiter.is_allowed(ip)     -> 429 if rate-limited
-  3. validate the request body (app.security.validator models) -> 422 if invalid
-  4. app.logging.logger.log_event(...) the outcome
-  5. forward the request to settings.target_api_url and return its response
+These endpoints mirror the fake target's real endpoints 
 
-Keep this file as the "wiring" layer -- the actual logic lives in the
-security/ and logging/ modules so it's independently testable.
 """
 from fastapi import APIRouter, Request, Response, HTTPException,status
 from pydantic import ValidationError
@@ -28,27 +20,33 @@ from dotenv import load_dotenv
 router = APIRouter()
 client = httpx.AsyncClient()
 
-@router.get("/login")
+@router.post("/login")
 async def gateway_login(request: Request,model: LoginAttempt):
     if not request.client:
         raise ValueError("No client found for API request")
     ip = request.client.host
+    print(is_banned(ip))
     if is_banned(ip):
         log_event(ip,"/login","blocked","banned")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="IP banned")
     if not is_allowed(ip):
         log_event(ip,"/login","blocked","rate-limited")
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="IP ratelimited")
+    body = await request.body()
     try:
-        model.model_validate(request.body())
+        model.model_validate_json(body)
     except ValidationError:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,detail="Unable to process request")
     log_event(ip,"/login","allowed")
 
     #FORWARDING Request to target API
-    body = await request.body()
+    current_file = os.path.abspath(__file__)
 
-    load_dotenv("./.env.example")
+    dir_lvl_1 = os.path.dirname(current_file)
+    dir_lvl_2 = os.path.dirname(dir_lvl_1) 
+    backend_dir = os.path.dirname(dir_lvl_2)
+    env_path = os.path.join(backend_dir, '.env.example')
+    load_dotenv(dotenv_path=env_path)
 
     hex_secret = os.getenv("SHARED_SECRET_KEY")
 
@@ -77,8 +75,9 @@ async def gateway_login(request: Request,model: LoginAttempt):
         headers=response.headers
     )
     
-@router.get("/order")
-async def gateway_get_orders(request:Request):
+@router.get("/orders/{customer_id}")
+async def gateway_get_orders(customer_id:int,request:Request):
+    cust_id = customer_id
     if not request.client:
             raise ValueError("No client found for API request")
     ip = request.client.host
@@ -90,9 +89,15 @@ async def gateway_get_orders(request:Request):
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="IP ratelimited")
     log_event(ip,"/orders","allowed")
 
-    body = await request.body()
+    body =b''
 
-    load_dotenv("./.env.example")
+    current_file = os.path.abspath(__file__)
+
+    dir_lvl_1 = os.path.dirname(current_file)
+    dir_lvl_2 = os.path.dirname(dir_lvl_1) 
+    backend_dir = os.path.dirname(dir_lvl_2)
+    env_path = os.path.join(backend_dir, '.env.example')
+    load_dotenv(dotenv_path=env_path)
 
     hex_secret = os.getenv("SHARED_SECRET_KEY")
 
@@ -104,11 +109,11 @@ async def gateway_get_orders(request:Request):
     headers.pop("host", None)
     headers["Gateway-Signature"] = signature
 
-    target_url = "http://127.0.0.1:8001/orders"
+    target_url = f"http://127.0.0.1:8001/orders/{cust_id}"
 
     request_params = request.query_params
 
-    response = await client.get(target_url,params=request_params)
+    response = await client.get(target_url)
 
     return Response(
         content=response.content,
@@ -118,7 +123,7 @@ async def gateway_get_orders(request:Request):
     )    
 
 @router.post("/db/orders")
-async def gateway_place_orders(request:Request):
+async def gateway_place_orders(request:Request, model:Order):
     if not request.client:
             raise ValueError("No client found for API request")
     ip = request.client.host
@@ -129,10 +134,21 @@ async def gateway_place_orders(request:Request):
         log_event(ip,"/db/orders","blocked","rate-limited")
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="IP ratelimited")
     log_event(ip,"/db/orders","allowed")
-
     body = await request.body()
 
-    load_dotenv("./.env.example")
+    try:
+        model.model_validate_json(body)
+    except ValidationError:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,detail="Unable to process request")
+    log_event(ip,"/db/orders","allowed")
+
+    current_file = os.path.abspath(__file__)
+
+    dir_lvl_1 = os.path.dirname(current_file)
+    dir_lvl_2 = os.path.dirname(dir_lvl_1) 
+    backend_dir = os.path.dirname(dir_lvl_2)
+    env_path = os.path.join(backend_dir, '.env.example')
+    load_dotenv(dotenv_path=env_path)
 
     hex_secret = os.getenv("SHARED_SECRET_KEY")
 
@@ -144,7 +160,7 @@ async def gateway_place_orders(request:Request):
     headers.pop("host", None)
     headers["Gateway-Signature"] = signature
 
-    target_url = "http://127.0.0.1:8001/login"
+    target_url = "http://127.0.0.1:8001/db/orders"
 
     forwarded_request = client.build_request(
         method = request.method,
@@ -161,7 +177,7 @@ async def gateway_place_orders(request:Request):
         headers=response.headers
     )
 @router.post("/webhooks/payments")
-async def gateway_payments(request:Request):
+async def gateway_payments(request:Request, model:PaymentBody):
     if not request.client:
             raise ValueError("No client found for API request")
     ip = request.client.host
@@ -172,10 +188,20 @@ async def gateway_payments(request:Request):
         log_event(ip,"/orders","blocked","rate-limited")
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="IP ratelimited")
     log_event(ip,"/orders","allowed")
-
     body = await request.body()
+    try:
+        model.model_validate_json(body)
+    except ValidationError:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,detail="Unable to process request")
+    log_event(ip,"/webhooks/payments","allowed")
 
-    load_dotenv("./.env.example")
+    current_file = os.path.abspath(__file__)
+
+    dir_lvl_1 = os.path.dirname(current_file)
+    dir_lvl_2 = os.path.dirname(dir_lvl_1) 
+    backend_dir = os.path.dirname(dir_lvl_2)
+    env_path = os.path.join(backend_dir, '.env.example')
+    load_dotenv(dotenv_path=env_path)
 
     hex_secret = os.getenv("SHARED_SECRET_KEY")
 
@@ -187,7 +213,7 @@ async def gateway_payments(request:Request):
     headers.pop("host", None)
     headers["Gateway-Signature"] = signature
 
-    target_url = "http://127.0.0.1:8001/orders"
+    target_url = "http://127.0.0.1:8001/webhooks/payments"
 
     forwarded_request = client.build_request(
         method = request.method,
@@ -203,17 +229,4 @@ async def gateway_payments(request:Request):
         status_code=response.status_code,
         headers = response.headers
         
-    ) 
-# TODO [B07]: add one route per protected target endpoint, e.g.:
-#
-# @router.post("/login")
-# async def gateway_login(request: Request, body: LoginRequest):
-#     ip = request.client.host
-#     if is_banned(ip):
-#         log_event(ip, "/login", "blocked", "banned")
-#         raise HTTPException(status_code=403, detail="Banned")
-#     if not is_allowed(ip):
-#         log_event(ip, "/login", "blocked", "rate_limit")
-#         raise HTTPException(status_code=429, detail="Rate limited")
-#     log_event(ip, "/login", "allowed")
-#     # forward to settings.target_api_url + "/login" via httpx, return response
+    )

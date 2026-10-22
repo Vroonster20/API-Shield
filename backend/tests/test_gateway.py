@@ -1,8 +1,6 @@
 """
-[Task B07] Integration tests for the gateway routes -- these exercise
+Integration tests for the gateway routes -- these exercise
 the full chain (ban check -> rate limit -> validation -> forward -> log).
-Use FastAPI's TestClient; you may need both the gateway app and the
-target app running (or mock the target call) depending on your approach.
 """
 from unittest.mock import AsyncMock
 

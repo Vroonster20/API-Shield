@@ -46,7 +46,7 @@ def health():
     return {"status": "ok"}
 
 
-app.include_router(gateway.router)
+app.include_router(gateway.router, prefix="/gateway")
 app.include_router(auth.router, prefix="/admin")
 app.include_router(admin.router, prefix="/admin")
 
