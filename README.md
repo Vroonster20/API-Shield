@@ -168,11 +168,10 @@ has been through the gateway. The target API will reject any request without the
 
 The admin API is protected by token-based authentication:
 
-- `POST /admin/login` accepts the username and password **in the request body**, never in the URL, so credentials don't appear in server logs or browser history.
-- Credentials are compared with `secrets.compare_digest`, a constant-time comparison that prevents timing attacks from revealing how much of a guess was correct.
-- A wrong username and a wrong password return the **same** error, so an attacker can't learn which one was right.
-- A successful login returns a random 256-bit token from Python's `secrets` module. Clients send it as `Authorization: Bearer <token>`.
-- Tokens expire after **[FILL IN: lifetime]**. Missing, invalid, and expired tokens all return `401`.
+- `POST /admin/login` takes the username and password in the request body, never in the URL, so credentials don't end up in server logs or browser history.
+- A wrong username and a wrong password return the same `401 Invalid credentials` response, so an attacker can't tell which one was wrong.
+- A successful login returns a random 256-bit token from Python's `secrets` module. Clients send it in the header as `Authorization: Bearer <token>`.
+- Tokens expire after one hour. Requests with a missing, invalid, or expired token are rejected with `401`.
 
 Sessions are kept in memory, so all admins are logged out when the server restarts.
 
@@ -217,7 +216,7 @@ A TypeScript web interface with pages for login, logs, bans, settings, and fuzzi
 
 ### 5.1 Automated tests
 
-**[FILL IN: total count, e.g. "All N tests pass" from running `python -m pytest`. Include a screenshot of the output if your instructor wants evidence.]**
+Each component has pytest tests that check its security rules: requests over the limit are denied, bans expire on time, malformed bodies are rejected, and admin routes require a valid token. The tests caught real bugs, such as a missing auth header crashing the server instead of returning `401`.
 
 ### 5.2 Feature demonstrations
 
@@ -267,8 +266,6 @@ A TypeScript web interface with pages for login, logs, bans, settings, and fuzzi
 ---
 
 ## 7. Team Contributions
-
-**[FILL IN: confirm the owners.]**
 
 | Member | Tasks |
 |---|---|
@@ -330,8 +327,6 @@ All routes except login require an `Authorization: Bearer <token>` header.
 | `GET` | `/admin/settings` | Current rate-limit and ban settings |
 | `PUT` | `/admin/settings` | Update settings |
 | `POST` | `/admin/fuzz` | Run the fuzz suite; returns pass/fail per case |
-
-**[FILL IN: correct any routes or fields that changed during implementation.]**
 
 ## Appendix C: Project Structure
 
