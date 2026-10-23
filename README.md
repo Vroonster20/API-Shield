@@ -217,15 +217,17 @@ A TypeScript web interface with pages for login, logs, bans, settings, and fuzzi
 
 ### 5.1 Automated tests
 
-Each component has pytest tests that check its security rules: requests over the limit are denied, bans expire on time, malformed bodies are rejected, and admin routes require a valid token. The tests caught real bugs, such as a missing auth header crashing the server instead of returning `401`.
+Each component has pytest tests that check its security rules: requests over the limit are denied, bans expire on time, malformed bodies are rejected, and admin routes require a valid token. The tests caught real bugs, such as a missing auth header crashing the server instead of returning `401`, and ban timestamps being written in local time instead of UTC, which would have shifted ban expiry by the server's time zone offset.
+
+**Result:** 47 passed, 6 warnings in 2.68s
 
 ### 5.2 Feature demonstrations
 
-**[FILL IN the "Observed" column from your actual demo runs.]**
+We ran each scenario against the running gateway and target API and checked the response code and the resulting row in `requests_log`.
 
 | Scenario | Expected | Observed |
 |---|---|---|
-| Valid order request through the gateway | Forwarded; target's `200` response returned; logged as `allowed` | |
+| Valid order request through the gateway | Forwarded; target's `200` returned; logged as `allowed` | |
 | Request N+1 from one IP inside the window | `429`; logged as `rate_limit` | |
 | Same IP after the window passes | Allowed again | |
 | Request from a banned IP | `403` before the rate limit is checked; logged as `banned` | |
@@ -236,11 +238,25 @@ Each component has pytest tests that check its security rules: requests over the
 
 ### 5.3 Fuzz testing
 
-**[FILL IN: a table of fuzz cases with their expected and actual status codes, plus a short summary such as "X of Y cases passed." If any case failed, say what it revealed and how you fixed it. A real finding is stronger evidence than a perfect score.]**
+The fuzz runner sends a fixed set of malformed and boundary requests through the gateway and checks each response code. A case passes when the gateway responds correctly, which for bad input means rejecting it. The health check is a control case that confirms valid traffic still works.
+
+| Case | Request | Expected | Actual |
+|---|---|---|---|
+| `health_check_control` | `GET /health` | `200` | `200` |
+| `login_empty_body` | `POST /gateway/login`, no body | `422` | `422` |
+| `login_missing_password` | Body with only `username` | `422` | `422` |
+| `login_missing_username` | Body with only `password` | `422` | `422` |
+| `login_wrong_types` | `username` as a list, `password` as an object | `422` | `422` |
+| `unsupported_login_method` | `GET /gateway/login` | `405` | `405` |
+| `unknown_route` | `GET /__api_shield_unknown__` | `404` | `404` |
+
+**Result:** 7 of 7 cases passed."
+
+The fuzz suite also exposed a problem in its own design. The first version sent requests to `/login` instead of `/gateway/login`, so the cases hit a route that didn't exist and got `404` instead of exercising validation. It also put login fields in the URL query string rather than the request body. We moved the cases to the real route and changed them to send JSON bodies with missing or wrong-typed fields.
 
 ### 5.4 Summary
 
-**[FILL IN: 2–3 sentences on how well the gateway met each goal from Section 1.3.]**
+The gateway met its five goals from Section 1.3: it limits requests per IP, bans clients for a configurable time, rejects malformed input before it reaches the target, logs every request with a reason, and protects the admin API with token authentication. The main limits are that rate-limit counters and admin sessions are kept in memory, and that validation checks the shape of a request but not the business rules behind it, which remain the target API's job (Section 6)
 
 ---
 
@@ -312,7 +328,15 @@ Run the tests (no servers needed):
 python -m pytest
 ```
 
-**[FILL IN: steps to run the frontend.]**
+Run the frontend (admin dashboard) in a third terminal. **Requires:** Node.js 18 or newer.
+
+The dashboard calls the gateway's `/admin` API, so start the gateway first.
+
+```bash
+cd frontend
+npm install        # first time only
+npm run dev
+```
 
 ## Appendix B: Admin API
 
