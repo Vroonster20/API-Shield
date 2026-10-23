@@ -209,7 +209,7 @@ A TypeScript web interface with pages for login, logs, bans, settings, and fuzzi
 | Validation | `test_validation.py` | Valid payment payloads pass; order payloads with a missing field or a wrong type are rejected |
 | Gateway | `test_gateway.py` | Banned IPs are blocked; Ratelimited IP's are logged and blocked; Allowed requests recieve a response |
 | Admin auth | `test_auth.py` | Correct login returns a token; wrong credentials return 401; wrong username and wrong password give identical responses; missing and invalid tokens return 401; a valid token reaches protected routes; tokens are valid just before expiry and rejected after |
-| Admin API and fuzzing | **[FILL IN]** | **[FILL IN]** |
+| Admin API and fuzzing | `admin.py`, `auth.py`,`fuzz_runner.py ` | Creating and deleting bans,manipulating settings,running fuzz test suite, fuzzer feeds various kinds of malformed input to the target API and returns results of test|
 
 ---
 
