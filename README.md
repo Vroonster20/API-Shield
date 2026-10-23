@@ -328,7 +328,15 @@ Run the tests (no servers needed):
 python -m pytest
 ```
 
-**[FILL IN: steps to run the frontend.]**
+Run the frontend (admin dashboard) in a third terminal. **Requires:** Node.js 18 or newer.
+
+The dashboard calls the gateway's `/admin` API, so start the gateway first.
+
+```bash
+cd frontend
+npm install        # first time only
+npm run dev
+```
 
 ## Appendix B: Admin API
 
