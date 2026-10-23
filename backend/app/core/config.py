@@ -1,12 +1,8 @@
 """
 App configuration, loaded from environment variables (.env).
 """
-from pydantic_settings import BaseSettings,SettingsConfigDict
+from pydantic_settings import BaseSettings
 from pydantic import SecretStr
-from pathlib import Path
-
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-ENV_PATH = BASE_DIR / ".env"
 
 class Settings(BaseSettings):
     db_path: str = "shield.db"
@@ -31,7 +27,7 @@ class Settings(BaseSettings):
 
 
     class Config:
-        env_file=ENV_PATH
+        env_file=".env"
         env_file_encoding="utf-8"
         extra="ignore"
 

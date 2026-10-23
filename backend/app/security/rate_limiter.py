@@ -1,9 +1,8 @@
 """
 Rate limiting.
 
-Fixed-window limiter: count requests per IP within the current window
-(app.core.config.settings.rate_limit_window_seconds). Reject once the
-count exceeds rate_limit_requests.
+Counts requests per IP within the current window.
+Reject once the count exceeds rate_limit_requests.
 """
 from app.core.config import settings
 import time
