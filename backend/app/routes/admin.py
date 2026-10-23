@@ -38,7 +38,7 @@ SETTING_KEYS = (
 )
 
 
-def _current_settings() -> dict[str, int]:
+def current_settings() -> dict[str, int]:
     saved_rules = get_rules()
     values: dict[str, int] = {}
     for key in SETTING_KEYS:
@@ -87,7 +87,7 @@ def revoke_ban(ban_id: int, _: dict = Depends(require_admin)):
 
 @router.get("/settings")
 def read_settings(_: dict = Depends(require_admin)):
-    return _current_settings()
+    return current_settings()
 
 
 @router.put("/settings")

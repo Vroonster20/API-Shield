@@ -43,7 +43,10 @@ FUZZ_CASES = (
 )
 
 
-async def run_fuzz_suite(gateway_base_url: str, transport:httpx.AsyncBaseTransport) -> list[dict[str, str | int | bool]]:
+async def run_fuzz_suite(
+        gateway_base_url: str, 
+        *,
+        transport:httpx.AsyncBaseTransport | None = None) -> list[dict[str, str | int | bool]]:
     """Return actual outcomes for a fixed set of safe gateway requests."""
     results: list[dict[str, str | int | bool]] = []
     async with httpx.AsyncClient(
