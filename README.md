@@ -92,7 +92,7 @@ Bans are checked before rate limits, so a banned client is rejected cheaply with
 | Database | SQLite (Python `sqlite3`) | No server to install, transparent raw SQL, sufficient for one gateway |
 | HTTP forwarding | `httpx` | Async-capable HTTP client for forwarding requests |
 | Testing | `pytest`, FastAPI `TestClient` | Tests run in-process without starting servers |
-| Frontend | TypeScript | AI-generated; see Section 8 |
+| Frontend | TypeScript | A TypeScript web interface with pages for login, logs, bans, settings, and fuzzing |
 
 ---
 
@@ -172,7 +172,7 @@ The admin API is protected by token-based authentication:
 - Credentials are compared with `secrets.compare_digest`, a constant-time comparison that prevents timing attacks from revealing how much of a guess was correct.
 - A wrong username and a wrong password return the **same** error, so an attacker can't learn which one was right.
 - A successful login returns a random 256-bit token from Python's `secrets` module. Clients send it as `Authorization: Bearer <token>`.
-- Tokens expire after **[FILL IN: lifetime]**. Missing, invalid, and expired tokens all return `401`.
+- Tokens expire after 1 hr. Missing, invalid, and expired tokens all return `401`.
 
 Sessions are kept in memory, so all admins are logged out when the server restarts.
 
@@ -180,11 +180,11 @@ Sessions are kept in memory, so all admins are logged out when the server restar
 
 Authenticated endpoints let the dashboard view logs, list, create, and revoke bans, read and update settings, and run the fuzz suite (full list in Appendix B).
 
-The **fuzz runner** sends a fixed set of malformed and boundary-case requests through the gateway and checks that each one gets the expected response. A case passes when the gateway behaves correctly, which usually means rejecting the bad request. Valid control requests check that legitimate traffic still gets through. **[FILL IN: list the case categories, e.g. missing fields, wrong types, oversized payloads, injection-style strings, valid controls.]**
+The **fuzz runner** sends a fixed set of malformed and boundary-case requests through the gateway and checks that each one gets the expected response. A case passes when the gateway behaves correctly, which usually means rejecting the bad request. Valid control requests check that legitimate traffic still gets through. The fuzzer sends payloads that have incorrect method, bad request data, and endpoints that don't exist
 
 ### 3.11 Admin dashboard (F00)
 
-A TypeScript web interface with pages for login, logs, bans, settings, and fuzzing. It was AI-generated against the finished admin API and then reviewed by the team (see Section 8).
+A TypeScript web interface with pages for login, logs, bans, settings, and fuzzing.
 
 ---
 
@@ -268,8 +268,6 @@ A TypeScript web interface with pages for login, logs, bans, settings, and fuzzi
 
 ## 7. Team Contributions
 
-**[FILL IN: confirm the owners.]**
-
 | Member | Tasks |
 |---|---|
 | Justin Vroon | B00 (skeleton), B01 (database), B03 (rate limiter), B08 (admin auth) |
@@ -330,8 +328,6 @@ All routes except login require an `Authorization: Bearer <token>` header.
 | `GET` | `/admin/settings` | Current rate-limit and ban settings |
 | `PUT` | `/admin/settings` | Update settings |
 | `POST` | `/admin/fuzz` | Run the fuzz suite; returns pass/fail per case |
-
-**[FILL IN: correct any routes or fields that changed during implementation.]**
 
 ## Appendix C: Project Structure
 
