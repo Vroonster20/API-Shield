@@ -35,11 +35,6 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
-@app.on_event("startup")
-def on_startup():
-    create_tables()
-    yield
-
 
 @app.get("/health")
 def health():

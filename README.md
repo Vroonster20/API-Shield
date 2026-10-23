@@ -92,7 +92,7 @@ Bans are checked before rate limits, so a banned client is rejected cheaply with
 | Database | SQLite (Python `sqlite3`) | No server to install, transparent raw SQL, sufficient for one gateway |
 | HTTP forwarding | `httpx` | Async-capable HTTP client for forwarding requests |
 | Testing | `pytest`, FastAPI `TestClient` | Tests run in-process without starting servers |
-| Frontend | TypeScript | AI-generated; see Section 8 |
+| Frontend | TypeScript | A TypeScript web interface with pages for login, logs, bans, settings, and fuzzing |
 
 ---
 
@@ -168,10 +168,11 @@ has been through the gateway. The target API will reject any request without the
 
 The admin API is protected by token-based authentication:
 
-- `POST /admin/login` takes the username and password in the request body, never in the URL, so credentials don't end up in server logs or browser history.
-- A wrong username and a wrong password return the same `401 Invalid credentials` response, so an attacker can't tell which one was wrong.
-- A successful login returns a random 256-bit token from Python's `secrets` module. Clients send it in the header as `Authorization: Bearer <token>`.
-- Tokens expire after one hour. Requests with a missing, invalid, or expired token are rejected with `401`.
+- `POST /admin/login` accepts the username and password **in the request body**, never in the URL, so credentials don't appear in server logs or browser history.
+- Credentials are compared with `secrets.compare_digest`, a constant-time comparison that prevents timing attacks from revealing how much of a guess was correct.
+- A wrong username and a wrong password return the **same** error, so an attacker can't learn which one was right.
+- A successful login returns a random 256-bit token from Python's `secrets` module. Clients send it as `Authorization: Bearer <token>`.
+- Tokens expire after 1 hr. Missing, invalid, and expired tokens all return `401`.
 
 Sessions are kept in memory, so all admins are logged out when the server restarts.
 
@@ -179,11 +180,11 @@ Sessions are kept in memory, so all admins are logged out when the server restar
 
 Authenticated endpoints let the dashboard view logs, list, create, and revoke bans, read and update settings, and run the fuzz suite (full list in Appendix B).
 
-The **fuzz runner** sends a fixed set of malformed and boundary-case requests through the gateway and checks that each one gets the expected response. A case passes when the gateway behaves correctly, which usually means rejecting the bad request. Valid control requests check that legitimate traffic still gets through. **[FILL IN: list the case categories, e.g. missing fields, wrong types, oversized payloads, injection-style strings, valid controls.]**
+The **fuzz runner** sends a fixed set of malformed and boundary-case requests through the gateway and checks that each one gets the expected response. A case passes when the gateway behaves correctly, which usually means rejecting the bad request. Valid control requests check that legitimate traffic still gets through. The fuzzer sends payloads that have incorrect method, bad request data, and endpoints that don't exist
 
 ### 3.11 Admin dashboard (F00)
 
-A TypeScript web interface with pages for login, logs, bans, settings, and fuzzing. It was AI-generated against the finished admin API and then reviewed by the team (see Section 8).
+A TypeScript web interface with pages for login, logs, bans, settings, and fuzzing.
 
 ---
 
@@ -208,7 +209,7 @@ A TypeScript web interface with pages for login, logs, bans, settings, and fuzzi
 | Validation | `test_validation.py` | Valid payment payloads pass; order payloads with a missing field or a wrong type are rejected |
 | Gateway | `test_gateway.py` | Banned IPs are blocked; Ratelimited IP's are logged and blocked; Allowed requests recieve a response |
 | Admin auth | `test_auth.py` | Correct login returns a token; wrong credentials return 401; wrong username and wrong password give identical responses; missing and invalid tokens return 401; a valid token reaches protected routes; tokens are valid just before expiry and rejected after |
-| Admin API and fuzzing | **[FILL IN]** | **[FILL IN]** |
+| Admin API and fuzzing | `admin.py`, `auth.py`,`fuzz_runner.py ` | Creating and deleting bans,manipulating settings,running fuzz test suite, fuzzer feeds various kinds of malformed input to the target API and returns results of test|
 
 ---
 

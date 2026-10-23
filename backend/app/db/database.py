@@ -4,17 +4,18 @@
 Tables:
   - requests_log: every request the gateway sees (allowed or blocked)
   - bans:         currently/previously banned IPs
-  - rules:        configurable settings (rate limit, ban duration) -- optional
+  - rules:        configurable settings (rate limit, ban duration)
 """
 from datetime import datetime, timedelta, timezone
 import sqlite3
 from contextlib import contextmanager
+from collections.abc import Generator
 
 from app.core.config import settings
 
 
 @contextmanager
-def get_db():
+def get_db() -> Generator[sqlite3.Connection]:
     conn = sqlite3.connect(settings.db_path)
     conn.row_factory = sqlite3.Row
     try:
@@ -32,8 +33,8 @@ def create_tables():
                 timestamp TEXT NOT NULL,
                 ip TEXT NOT NULL,
                 path TEXT NOT NULL,
-                decision TEXT NOT NULL,   -- 'allowed' | 'blocked'
-                reason TEXT,              -- e.g. 'rate_limit', 'banned', 'invalid_input', NULL if allowed
+                decision TEXT NOT NULL,  
+                reason TEXT,              
                 source TEXT NOT NULL DEFAULT 'live'
             )
         """)
@@ -58,19 +59,19 @@ def create_tables():
                 value TEXT NOT NULL
             )
         """)
-        _ensure_column(conn, "requests_log", "source", "TEXT NOT NULL DEFAULT 'live'")
-        _ensure_column(conn, "bans", "source", "TEXT NOT NULL DEFAULT 'live'")
+        ensure_column(conn, "requests_log", "source", "TEXT NOT NULL DEFAULT 'live'")
+        ensure_column(conn, "bans", "source", "TEXT NOT NULL DEFAULT 'live'")
 
 
-def _ensure_column(
+def ensure_column(
     conn: sqlite3.Connection,
     table: str,
     column: str,
     definition: str,
 ) -> None:
-    columns = {
-        row["name"] for row in conn.execute(f"PRAGMA table_info({table})")
-    }
+    columns = set()
+    for row in conn.execute(f"PRAGMA table_info({table})"):
+        columns.add(row["name"])
     if column not in columns:
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
 

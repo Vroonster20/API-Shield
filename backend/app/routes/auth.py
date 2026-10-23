@@ -75,11 +75,5 @@ def require_admin(credentials: HTTPAuthorizationCredentials | None = Depends(sec
             status_code=401,
             detail="Invalid token or session expired.",
         )
-    
-    # if not session_data.get("is_admin", False):
-    #     raise HTTPException(
-    #         status_code=403,
-    #         detail="Access forbidden. Administrator privileges required.",
-    #     )
         
     return session_data

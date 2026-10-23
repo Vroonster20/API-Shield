@@ -14,18 +14,18 @@ from main import app
 client = TestClient(app)
 
 
-def test_banned_ip_is_blocked_before_rate_limit_check(monkeypatch):
+def test_banned_ip_is_blocked_before_rate_limit_check(monkeypatch,customer_id:int=579):
     rate_limit = AsyncMock()
     monkeypatch.setattr(gateway, "is_banned", lambda ip: True)
     monkeypatch.setattr(gateway, "is_allowed", rate_limit)
 
-    response = client.get("/order")
+    response = client.get(f"/gateway/orders/{customer_id}")
 
     assert response.status_code == 403
     rate_limit.assert_not_called()
 
 
-def test_allowed_request_is_logged_and_forwarded(monkeypatch):
+def test_allowed_request_is_logged_and_forwarded(monkeypatch,customer_id:int=579):
     events = []
     monkeypatch.setattr(gateway, "is_banned", lambda ip: False)
     monkeypatch.setattr(gateway, "is_allowed", lambda ip: True)
@@ -37,14 +37,14 @@ def test_allowed_request_is_logged_and_forwarded(monkeypatch):
     forward = AsyncMock(return_value=httpx.Response(200, content=b"[]"))
     monkeypatch.setattr(gateway.client, "get", forward)
 
-    response = client.get("/order")
+    response = client.get(f"/gateway/orders/{customer_id}")
 
     assert response.status_code == 200
     forward.assert_awaited_once()
     assert events == [("testclient", "/orders", "allowed")]
 
 
-def test_rate_limited_request_is_logged_and_not_forwarded(monkeypatch):
+def test_rate_limited_request_is_logged_and_not_forwarded(monkeypatch,customer_id:int=579):
     events = []
     monkeypatch.setattr(gateway, "is_banned", lambda ip: False)
     monkeypatch.setattr(gateway, "is_allowed", lambda ip: False)
@@ -56,7 +56,7 @@ def test_rate_limited_request_is_logged_and_not_forwarded(monkeypatch):
     forward = AsyncMock()
     monkeypatch.setattr(gateway.client, "get", forward)
 
-    response = client.get("/order")
+    response = client.get(f"/gateway/orders/{customer_id}")
 
     assert response.status_code == 429
     forward.assert_not_awaited()

@@ -9,18 +9,15 @@ class ValidatorTest(unittest.TestCase):
     def test_valid_payload_passes(self,payload:dict):
         validated_payload = PaymentBody.model_validate(payload)
         assert validated_payload.data.amount > 0
-        print("TEST passed!")
 
     def test_missing_field_rejected(self,payload:dict):
         with self.assertRaises(ValidationError):
             validated_payload = CustomerOrderRequest.model_validate(payload)
-        print("TEST passed!")
 
 
     def test_wrong_type_rejected(self,payload:dict):
         with self.assertRaises(ValidationError):
             validated_payload = CustomerOrderRequest.model_validate(payload)
-        print("TEST passed!")
 
 valid_payload = {
     "id": 908123457,

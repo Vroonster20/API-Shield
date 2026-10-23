@@ -2,7 +2,7 @@
 App configuration, loaded from environment variables (.env).
 """
 from pydantic_settings import BaseSettings
-
+from pydantic import SecretStr
 
 class Settings(BaseSettings):
     db_path: str = "shield.db"
@@ -25,8 +25,13 @@ class Settings(BaseSettings):
         r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
     )
 
+    shared_secret_key: SecretStr = SecretStr("")
+
+
     class Config:
-        env_file = ".env"
+        env_file=".env"
+        env_file_encoding="utf-8"
+        extra="ignore"
 
 
 settings = Settings()
