@@ -19,7 +19,24 @@ from dotenv import load_dotenv
 
 import uvicorn
 
-from target.target_db import create_target_tables,fill_user_table,get_target_db,check_username,retrieve_password,addwebhook
+if __package__:
+    from .target_db import (
+        addwebhook,
+        check_username,
+        create_target_tables,
+        fill_user_table,
+        get_target_db,
+        retrieve_password,
+    )
+else:
+    from target_db import (
+        addwebhook,
+        check_username,
+        create_target_tables,
+        fill_user_table,
+        get_target_db,
+        retrieve_password,
+    )
 
 app = FastAPI(title="Fake Target API")
 

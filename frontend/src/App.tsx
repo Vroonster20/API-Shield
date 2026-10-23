@@ -2,13 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Dispatch, FormEvent, ReactNode, SetStateAction } from "react";
 import {
   Activity,
-  ArrowDownRight,
-  ArrowUpRight,
   Ban,
   Check,
-  ChevronDown,
   CircleHelp,
-  Clock3,
   FlaskConical,
   Globe2,
   LayoutDashboard,
@@ -18,10 +14,7 @@ import {
   RefreshCw,
   Search,
   Settings2,
-  Shield,
-  ShieldAlert,
   ShieldCheck,
-  Wifi,
   X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -116,26 +109,21 @@ function StatusBadge({ value }: { value: unknown }) {
 }
 
 function PageHeading({
-  eyebrow,
   title,
   description,
   action,
 }: {
-  eyebrow: string;
   title: string;
   description: string;
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-          {eyebrow}
-        </p>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           {title}
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
       </div>
       {action}
     </div>
@@ -156,14 +144,16 @@ function Notice({
     >
       <span>{children}</span>
       {onDismiss && (
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon-xs"
           onClick={onDismiss}
           aria-label="Dismiss error"
-          className="rounded p-0.5 hover:bg-destructive/10"
+          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
         >
           <X className="size-4" />
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -277,57 +267,21 @@ function LoginScreen({
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0b0d12] px-4 py-12 text-white">
-      <div className="pointer-events-none absolute -left-32 top-0 size-[32rem] rounded-full bg-violet-600/10 blur-[120px]" />
-      <div className="pointer-events-none absolute -bottom-48 -right-24 size-[32rem] rounded-full bg-cyan-500/10 blur-[120px]" />
-      <div className="relative grid w-full max-w-5xl overflow-hidden rounded-2xl border border-white/10 bg-[#10131a] shadow-2xl shadow-black/30 md:grid-cols-[1fr_0.85fr]">
-        <section className="hidden flex-col justify-between border-r border-white/10 p-10 md:flex">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300">
-              <ShieldCheck className="size-5" />
-            </div>
-            <span className="font-semibold tracking-tight">API Shield</span>
+    <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <div className="mb-2 flex items-center gap-2 text-primary">
+            <ShieldCheck className="size-5" />
+            <span className="text-sm font-semibold text-foreground">API Shield</span>
           </div>
-          <div className="max-w-md">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-violet-300">
-              Security operations
-            </p>
-            <h1 className="text-4xl font-semibold leading-tight tracking-tight">
-              Your API.
-              <br />
-              Under your watch.
-            </h1>
-            <p className="mt-5 text-sm leading-6 text-slate-400">
-              Review gateway traffic, manage blocked addresses, tune protection
-              rules, and test your defenses from one place.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <span className="size-1.5 rounded-full bg-emerald-400" />
-            Admin console
-            <span className="mx-1 text-slate-700">·</span>
-            Connected to your gateway
-          </div>
-        </section>
-        <section className="p-6 sm:p-10">
-          <div className="mb-8 flex items-center gap-3 md:hidden">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300">
-              <ShieldCheck className="size-5" />
-            </div>
-            <span className="font-semibold">API Shield</span>
-          </div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-300">
-            Welcome back
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-            Sign in to your dashboard
-          </h2>
-          <p className="mt-2 text-sm text-slate-400">
-            Use the admin credentials configured for your gateway.
-          </p>
-
-          <form onSubmit={submit} className="mt-8 space-y-5">
-            <label className="block space-y-2 text-sm font-medium">
+          <CardTitle className="text-xl">Sign in</CardTitle>
+          <CardDescription>
+            Enter your gateway URL and admin credentials.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={submit} className="space-y-4">
+            <label className="block space-y-1.5 text-sm font-medium">
               Gateway URL
               <Input
                 type="url"
@@ -335,10 +289,9 @@ function LoginScreen({
                 value={apiUrl}
                 onChange={(event) => setApiUrl(event.target.value)}
                 placeholder="http://127.0.0.1:8000"
-                className="h-10 border-white/10 bg-white/[0.03] text-white placeholder:text-slate-600"
               />
             </label>
-            <label className="block space-y-2 text-sm font-medium">
+            <label className="block space-y-1.5 text-sm font-medium">
               Username
               <Input
                 autoComplete="username"
@@ -346,10 +299,9 @@ function LoginScreen({
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
                 placeholder="Admin username"
-                className="h-10 border-white/10 bg-white/[0.03] text-white placeholder:text-slate-600"
               />
             </label>
-            <label className="block space-y-2 text-sm font-medium">
+            <label className="block space-y-1.5 text-sm font-medium">
               Password
               <Input
                 type="password"
@@ -358,33 +310,19 @@ function LoginScreen({
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder="Admin password"
-                className="h-10 border-white/10 bg-white/[0.03] text-white placeholder:text-slate-600"
               />
             </label>
-            {error && (
-              <div
-                role="alert"
-                className="rounded-lg border border-red-400/20 bg-red-400/5 px-3 py-2.5 text-sm text-red-300"
-              >
-                {error}
-              </div>
-            )}
-            <Button
-              type="submit"
-              disabled={busy}
-              className="h-10 w-full bg-violet-500 text-white hover:bg-violet-400"
-            >
-              {busy ? (
-                <LoaderCircle className="mr-2 size-4 animate-spin" />
-              ) : null}
+            {error && <Notice>{error}</Notice>}
+            <Button type="submit" disabled={busy} className="w-full">
+              {busy && <LoaderCircle className="size-4 animate-spin" />}
               Sign in
             </Button>
+            <p className="text-center text-xs text-muted-foreground">
+              Credentials are sent only to this gateway.
+            </p>
           </form>
-          <p className="mt-6 text-center text-xs text-slate-500">
-            Session credentials are sent only to this gateway.
-          </p>
-        </section>
-      </div>
+        </CardContent>
+      </Card>
     </main>
   );
 }
@@ -632,7 +570,7 @@ export default function App() {
   const currentNavigation = navigation.find((item) => item.id === page);
 
   return (
-    <div className="min-h-screen bg-[#f6f7fb] text-foreground">
+    <div className="min-h-screen bg-background text-foreground">
       {mobileNavOpen && (
         <button
           type="button"
@@ -642,102 +580,85 @@ export default function App() {
         />
       )}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-[250px] flex-col border-r bg-[#11131b] text-slate-300 transition-transform lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-[250px] flex-col border-r bg-background transition-transform lg:translate-x-0 ${
           mobileNavOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex h-[72px] items-center gap-3 border-b border-white/[0.07] px-6">
-          <div className="flex size-9 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300">
-            <ShieldCheck className="size-5" />
-          </div>
-          <div>
-            <div className="text-sm font-semibold text-white">API Shield</div>
-            <div className="text-[11px] text-slate-500">Gateway console</div>
-          </div>
+        <div className="flex h-[72px] items-center gap-2 border-b px-5">
+          <ShieldCheck className="size-5 text-primary" />
+          <div className="text-sm font-semibold">API Shield</div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Close navigation"
+            onClick={() => setMobileNavOpen(false)}
+            className="ml-auto lg:hidden"
+          >
+            <X />
+          </Button>
         </div>
-        <div className="px-4 pt-7">
-          <p className="px-3 pb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Workspace
+        <div className="px-3 pt-5">
+          <p className="px-3 pb-2 text-xs font-medium text-muted-foreground">
+            Pages
           </p>
           <nav className="space-y-1" aria-label="Main navigation">
             {navigation.map(({ id, label, icon: Icon }) => (
-              <button
+              <Button
                 type="button"
+                variant={page === id ? "secondary" : "ghost"}
                 key={id}
                 onClick={() => {
                   setPage(id);
                   setMobileNavOpen(false);
                 }}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] transition-colors ${
-                  page === id
-                    ? "bg-violet-500/15 font-medium text-violet-200"
-                    : "text-slate-400 hover:bg-white/[0.05] hover:text-white"
-                }`}
+                className="w-full justify-start gap-3"
               >
-                <Icon className="size-[17px]" />
+                <Icon className="size-4" />
                 {label}
                 {id === "bans" && bans.length > 0 && (
-                  <span className="ml-auto rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] text-slate-300">
+                  <Badge variant="outline" className="ml-auto">
                     {bans.length}
-                  </span>
+                  </Badge>
                 )}
-              </button>
+              </Button>
             ))}
           </nav>
         </div>
-        <div className="mt-auto p-4">
-          <div className="mb-3 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
-            <div className="flex items-center gap-2 text-xs font-medium text-slate-300">
-              <span className="relative flex size-2">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-30" />
-                <span className="relative inline-flex size-2 rounded-full bg-emerald-400" />
-              </span>
-              {token ? "Authenticated session" : "Preview mode"}
-            </div>
-            <p className="mt-2 truncate text-[11px] text-slate-500">
-              {normalizedApiUrl}
-            </p>
-          </div>
+        <div className="mt-auto border-t p-3">
+          <p className="truncate px-3 pb-2 text-xs text-muted-foreground" title={normalizedApiUrl}>
+            {normalizedApiUrl}
+          </p>
           {token && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={signOut}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] text-slate-400 transition-colors hover:bg-white/[0.05] hover:text-white"
+              className="w-full justify-start gap-3"
             >
               <LogOut className="size-4" />
               Sign out
-            </button>
+            </Button>
           )}
         </div>
       </aside>
 
       <div className="min-h-screen lg:pl-[250px]">
-        <header className="sticky top-0 z-20 flex h-[72px] items-center justify-between border-b bg-white/90 px-4 backdrop-blur sm:px-7 lg:px-9">
+        <header className="sticky top-0 z-20 flex h-[64px] items-center justify-between border-b bg-background px-4 sm:px-7 lg:px-9">
           <div className="flex items-center gap-3">
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               aria-label="Open navigation"
               onClick={() => setMobileNavOpen(true)}
-              className="rounded-md p-2 text-muted-foreground hover:bg-muted lg:hidden"
+              className="lg:hidden"
             >
-              <Menu className="size-5" />
-            </button>
-            <div className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
-              <span>Workspace</span>
-              <span className="text-slate-300">/</span>
-              <span className="font-medium text-foreground">
-                {currentNavigation?.label}
-              </span>
-            </div>
-            <div className="text-sm font-medium sm:hidden">
-              {currentNavigation?.label}
-            </div>
+              <Menu />
+            </Button>
+            <div className="text-sm font-medium">{currentNavigation?.label}</div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="hidden items-center gap-2 rounded-full border bg-white px-3 py-1.5 text-[11px] text-muted-foreground sm:flex">
-              <span className="size-1.5 rounded-full bg-emerald-500" />
-              {token ? "Gateway session active" : "Dashboard preview"}
-            </div>
             <Button
               variant="outline"
               size="sm"
@@ -749,28 +670,28 @@ export default function App() {
               <span className="hidden sm:inline">Refresh</span>
             </Button>
             {token && (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 onClick={signOut}
                 aria-label="Sign out"
-                className="flex size-8 items-center justify-center rounded-full bg-violet-100 text-xs font-semibold text-violet-700"
               >
-                <LogOut className="size-4" />
-              </button>
+                <LogOut />
+              </Button>
             )}
           </div>
         </header>
 
         <main className="mx-auto max-w-[1440px] px-4 py-7 sm:px-7 sm:py-9 lg:px-9">
           {!token && (
-            <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              Login is temporarily disabled. This dashboard is in preview mode;
-              API data and actions require login to be enabled.
+            <div className="mb-5 rounded-lg border bg-muted px-4 py-3 text-sm text-muted-foreground">
+              Login is disabled. API data and actions are unavailable in preview mode.
             </div>
           )}
           {error && <Notice onDismiss={() => setError("")}>{error}</Notice>}
           {pageNotice && (
-            <div className="mb-5 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            <div className="mb-5 flex items-center gap-2 rounded-lg border bg-muted px-4 py-3 text-sm">
               <Check className="size-4" />
               {pageNotice}
             </div>
@@ -823,13 +744,6 @@ export default function App() {
             />
           )}
         </main>
-        <footer className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-2 px-4 pb-7 text-[11px] text-muted-foreground sm:px-7 lg:px-9">
-          <span>API Shield · Admin dashboard</span>
-          <span className="flex items-center gap-1.5">
-            <Wifi className="size-3.5" />
-            {normalizedApiUrl}
-          </span>
-        </footer>
       </div>
     </div>
   );
@@ -858,58 +772,35 @@ function OverviewPage({
   return (
     <>
       <PageHeading
-        eyebrow="Gateway overview"
-        title="Good to see you"
-        description="A live view of requests and protection across your API gateway."
-        action={
-          <div className="flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-xs text-muted-foreground">
-            <Clock3 className="size-3.5" />
-            Latest gateway data
-          </div>
-        }
+        title="Overview"
+        description="Recent gateway activity and protection settings."
       />
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Requests inspected"
           value={loading && !logs.length ? "—" : String(logs.length)}
-          detail="Recent request log rows"
-          icon={Activity}
-          tone="violet"
         />
         <MetricCard
           label="Requests allowed"
           value={String(allowedCount)}
-          detail="In the loaded log history"
-          icon={ArrowUpRight}
-          tone="green"
         />
         <MetricCard
           label="Requests blocked"
           value={String(blockedCount)}
-          detail="In the loaded log history"
-          icon={ArrowDownRight}
-          tone="amber"
         />
         <MetricCard
           label="Active bans"
           value={String(bans.length)}
-          detail="Addresses returned by gateway"
-          icon={ShieldAlert}
-          tone="red"
         />
       </div>
       <div className="grid gap-5 xl:grid-cols-[1.55fr_1fr]">
-        <Card className="border-0 shadow-sm ring-1 ring-slate-200/80">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle>Recent requests</CardTitle>
-              <CardDescription className="mt-1">
-                Latest activity reported by the gateway.
-              </CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={() => goTo("logs")}>
               All logs
-              <ChevronDown className="ml-1 size-3.5 -rotate-90" />
             </Button>
           </CardHeader>
           <CardContent className="p-0">
@@ -922,25 +813,15 @@ function OverviewPage({
           </CardContent>
         </Card>
         <div className="space-y-5">
-          <Card className="border-0 shadow-sm ring-1 ring-slate-200/80">
+          <Card>
             <CardHeader>
               <CardTitle>Protection rules</CardTitle>
-              <CardDescription className="mt-1">
-                Current gateway limits from settings.
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {settingKeys.map((key) => (
                 <div key={key} className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-sm font-medium">{settingLabels[key].label}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {key === "rate_limit_requests"
-                        ? "Per IP address"
-                        : key === "rate_limit_window_seconds"
-                          ? "Window duration"
-                          : "Automatic ban length"}
-                    </p>
                   </div>
                   <span className="rounded-md bg-muted px-2.5 py-1 text-sm font-semibold tabular-nums">
                     {settings[key] ?? "—"}
@@ -956,29 +837,18 @@ function OverviewPage({
                 className="mt-1 w-full"
                 onClick={() => goTo("settings")}
               >
-                Configure protection
-                <ChevronDown className="ml-1 size-3.5 -rotate-90" />
+                Settings
               </Button>
             </CardContent>
           </Card>
-          <Card className="border-0 bg-[#171a24] text-white shadow-sm">
-            <CardContent className="flex items-center gap-4 p-5">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300">
-                <Shield className="size-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium">Test your defenses</p>
-                <p className="mt-1 text-xs text-slate-400">
-                  Run the gateway’s request validation suite.
-                </p>
-              </div>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => goTo("fuzz")}
-                className="shrink-0"
-              >
-                Open
+          <Card>
+            <CardHeader>
+              <CardTitle>Fuzz testing</CardTitle>
+              <CardDescription>Run the gateway’s predefined test cases.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" onClick={() => goTo("fuzz")}>
+                Open tests
               </Button>
             </CardContent>
           </Card>
@@ -991,37 +861,15 @@ function OverviewPage({
 function MetricCard({
   label,
   value,
-  detail,
-  icon: Icon,
-  tone,
 }: {
   label: string;
   value: string;
-  detail: string;
-  icon: typeof Activity;
-  tone: "violet" | "green" | "amber" | "red";
 }) {
-  const tones = {
-    violet: "bg-violet-50 text-violet-600",
-    green: "bg-emerald-50 text-emerald-600",
-    amber: "bg-amber-50 text-amber-600",
-    red: "bg-rose-50 text-rose-600",
-  };
   return (
-    <Card className="border-0 shadow-sm ring-1 ring-slate-200/80">
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground">{label}</p>
-            <p className="mt-3 text-3xl font-semibold tracking-tight tabular-nums">
-              {value}
-            </p>
-          </div>
-          <div className={`flex size-9 items-center justify-center rounded-lg ${tones[tone]}`}>
-            <Icon className="size-4" />
-          </div>
-        </div>
-        <p className="mt-3 text-[11px] text-muted-foreground">{detail}</p>
+    <Card>
+      <CardContent className="p-4">
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <p className="mt-2 text-2xl font-semibold tabular-nums">{value}</p>
       </CardContent>
     </Card>
   );
@@ -1064,9 +912,8 @@ function LogsPage({
   return (
     <>
       <PageHeading
-        eyebrow="Traffic intelligence"
         title="Request logs"
-        description="Inspect requests seen by the gateway, including allowed and blocked traffic."
+        description="Search and review allowed or blocked requests."
         action={
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -1075,21 +922,20 @@ function LogsPage({
               placeholder="Search logs..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              className="h-9 border-slate-200 bg-white pl-9"
+              className="pl-9"
             />
           </div>
         }
       />
-      <Card className="border-0 shadow-sm ring-1 ring-slate-200/80">
+      <Card>
         <CardHeader className="flex flex-row items-center justify-between border-b">
           <div>
             <CardTitle>Gateway activity</CardTitle>
             <CardDescription className="mt-1">
               {rows.length} {rows.length === 1 ? "record" : "records"}
-              {search ? " matching your search" : " returned by the API"}
+              {search ? " matching your search" : ""}
             </CardDescription>
           </div>
-          <Badge variant="outline">Gateway records</Badge>
         </CardHeader>
         <CardContent className="p-0">
           <DataTable
@@ -1128,22 +974,16 @@ function BansPage({
   return (
     <>
       <PageHeading
-        eyebrow="Access control"
         title="IP bans"
-        description="Review banned addresses or add an IP to the gateway deny list."
+        description="Add an address to the deny list or revoke an existing ban."
       />
-      <Card className="mb-5 border-0 shadow-sm ring-1 ring-slate-200/80">
+      <Card className="mb-5">
         <CardContent className="flex flex-col justify-between gap-5 p-5 sm:flex-row sm:items-center">
-          <div className="flex items-start gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
-              <Ban className="size-4.5" />
-            </div>
-            <div>
-              <h2 className="font-medium">Manually ban an address</h2>
-              <p className="mt-1 text-xs text-muted-foreground">
-                The gateway applies its configured ban duration.
-              </p>
-            </div>
+          <div>
+            <h2 className="font-medium">Add a ban</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              The gateway applies the configured ban duration.
+            </p>
           </div>
           <form onSubmit={onCreate} className="flex w-full gap-2 sm:max-w-md">
             <Input
@@ -1153,24 +993,21 @@ function BansPage({
               onChange={(event) => setIp(event.target.value)}
               placeholder="e.g. 203.0.113.42"
               aria-label="IP address to ban"
-              className="h-9 bg-white"
             />
-            <Button type="submit" disabled={actionBusy || !ip.trim()} className="shrink-0 gap-2">
-              <Ban className="size-3.5" />
+            <Button type="submit" disabled={actionBusy || !ip.trim()} className="shrink-0">
               Ban IP
             </Button>
           </form>
         </CardContent>
       </Card>
-      <Card className="border-0 shadow-sm ring-1 ring-slate-200/80">
+      <Card>
         <CardHeader className="flex flex-row items-center justify-between border-b">
           <div>
             <CardTitle>Banned addresses</CardTitle>
             <CardDescription className="mt-1">
-              {rows.length} {rows.length === 1 ? "record" : "records"} returned by the gateway.
+              {rows.length} {rows.length === 1 ? "record" : "records"}
             </CardDescription>
           </div>
-          <Badge variant="outline">Gateway records</Badge>
         </CardHeader>
         <CardContent className="p-0">
           <DataTable
@@ -1241,17 +1078,13 @@ function SettingsPage({
   return (
     <>
       <PageHeading
-        eyebrow="Gateway configuration"
         title="Protection settings"
-        description="Adjust rate limiting and automatic ban duration for your gateway."
+        description="Change rate limits and automatic ban duration."
       />
-      <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
-        <Card className="border-0 shadow-sm ring-1 ring-slate-200/80">
+      <div className="max-w-3xl">
+        <Card>
           <CardHeader className="border-b">
             <CardTitle>Traffic controls</CardTitle>
-            <CardDescription className="mt-1">
-              These values are loaded from and saved to the gateway API.
-            </CardDescription>
           </CardHeader>
           <CardContent className="p-5 sm:p-6">
             {loading && settingKeys.every((key) => settings[key] === undefined) ? (
@@ -1283,7 +1116,6 @@ function SettingsPage({
                       onChange={(event) =>
                         setInputs({ ...inputs, [key]: event.target.value })
                       }
-                      className="h-9 bg-white"
                     />
                   </label>
                 ))}
@@ -1297,28 +1129,6 @@ function SettingsPage({
                 </div>
               </form>
             )}
-          </CardContent>
-        </Card>
-        <Card className="h-fit border-0 bg-[#171a24] text-white shadow-sm">
-          <CardContent className="p-5">
-            <div className="mb-4 flex size-10 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300">
-              <ShieldCheck className="size-5" />
-            </div>
-            <h2 className="font-medium">Layered protection</h2>
-            <p className="mt-2 text-xs leading-5 text-slate-400">
-              Rate limits help control request bursts. Bans prevent known
-              abusive addresses from reaching your target API.
-            </p>
-            <div className="mt-5 space-y-3 border-t border-white/10 pt-4 text-xs text-slate-300">
-              <p className="flex items-center gap-2">
-                <Check className="size-3.5 text-emerald-400" />
-                Per-IP request limits
-              </p>
-              <p className="flex items-center gap-2">
-                <Check className="size-3.5 text-emerald-400" />
-                Configurable ban duration
-              </p>
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -1343,9 +1153,8 @@ function FuzzPage({
   return (
     <>
       <PageHeading
-        eyebrow="Validation testing"
         title="Fuzz testing"
-        description="Send the gateway’s predefined test cases and review how each request was handled."
+        description="Run the predefined gateway test cases."
         action={
           <Button onClick={onRun} disabled={actionBusy || loading} className="gap-2">
             {actionBusy ? (
@@ -1362,27 +1171,18 @@ function FuzzPage({
           <MetricCard
             label="Cases run"
             value={String(rows.length)}
-            detail="Results returned by gateway"
-            icon={FlaskConical}
-            tone="violet"
           />
           <MetricCard
             label="Passed"
             value={String(passed)}
-            detail="Expected gateway behavior"
-            icon={Check}
-            tone="green"
           />
           <MetricCard
             label="Failed"
             value={String(failed)}
-            detail="Unexpected gateway behavior"
-            icon={ShieldAlert}
-            tone="red"
           />
         </div>
       )}
-      <Card className="border-0 shadow-sm ring-1 ring-slate-200/80">
+      <Card>
         <CardHeader className="flex flex-row items-center justify-between border-b">
           <div>
             <CardTitle>Test case results</CardTitle>
@@ -1392,7 +1192,6 @@ function FuzzPage({
                 : "Run the suite to inspect the gateway’s validation behavior."}
             </CardDescription>
           </div>
-          <Badge variant="outline">Live API data</Badge>
         </CardHeader>
         <CardContent className="p-0">
           <DataTable

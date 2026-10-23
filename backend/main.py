@@ -10,7 +10,7 @@ import uvicorn
 
 from app.core.config import settings
 from app.db.database import create_tables, get_rules, seed_demo_data
-from app.routes import gateway, auth, admin   # uncomment as each router is implemented
+from app.routes import gateway, auth, admin
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
