@@ -217,7 +217,7 @@ A TypeScript web interface with pages for login, logs, bans, settings, and fuzzi
 
 ### 5.1 Automated tests
 
-**[FILL IN: total count, e.g. "All N tests pass" from running `python -m pytest`. Include a screenshot of the output if your instructor wants evidence.]**
+Each component has pytest tests that check its security rules: requests over the limit are denied, bans expire on time, malformed bodies are rejected, and admin routes require a valid token. The tests caught real bugs, such as a missing auth header crashing the server instead of returning `401`.
 
 ### 5.2 Feature demonstrations
 

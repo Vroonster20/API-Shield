@@ -15,15 +15,16 @@ class PaymentDetails(BaseModel):
     status: str
     client_secret: str
 
+class PaymentRequest(BaseModel):
+    id: int
+    impotency_key: str
+
 class PaymentBody(BaseModel):
     id: int
     data: PaymentDetails
     request: PaymentRequest
     type : str
 
-class PaymentRequest(BaseModel):
-    id: int
-    impotency_key: str
 
 class CustomerOrderRequest(BaseModel):
     order_id: int
