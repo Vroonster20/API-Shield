@@ -76,39 +76,53 @@ async def login(data:Request):
             detail="Signature not accepted"
         )
 
+    invalid_credentials = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="incorrect username or password",
+    )
+
+    if not isinstance(body, dict):
+        raise invalid_credentials
+
     given_user = body.get("username")
+    given_password = body.get("password")
+
+    if (
+        not isinstance(given_user, str)
+        or not given_user
+        or not isinstance(given_password, str)
+        or not given_password
+    ):
+        raise invalid_credentials
+
+    password_bytes = given_password.encode("utf-8")
+
+    if len(password_bytes) > 72:
+        raise invalid_credentials
+
+    # bcrypt 5 rejects passwords longer than 72 bytes.
+    if len(password_bytes) > 72:
+        raise invalid_credentials
+
     user = check_username(given_user)
-    print("got username")
+    if user is None:
+        raise invalid_credentials
 
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="incorrect username or password"
-        )
-    else:
-        print("getting pass")
-        hashed_pass = retrieve_password(user)
-        print(hashed_pass)
-        verified_password = False
-        if hashed_pass:
-            pt = body.get('password')
-            print(pt)
-            if pt is None:
-                raise ValueError("Username or Password cannot be None")
-            pt_bytes = str.encode(pt)
-            print(pt_bytes)
-            verified_password = bcrypt.checkpw(pt_bytes,hashed_pass)
+    hashed_password = retrieve_password(user)
+    if not hashed_password:
+        raise invalid_credentials
 
-    if not verified_password:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="incorrect username or password"
-        )
+    # Support hashes stored in SQLite as either TEXT or BLOB.
+    if isinstance(hashed_password, str):
+        hashed_password = hashed_password.encode("utf-8")
+
+    if not bcrypt.checkpw(password_bytes, hashed_password):
+        raise invalid_credentials
 
     return {
         "access_token": "mock access token",
         "token_type": "bearer",
-        "username": given_user
+        "username": given_user,
     }
 
 @app.get("/orders/{customer_id}")

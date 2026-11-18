@@ -68,24 +68,18 @@ def addwebhook(event_id,recieved:datetime.datetime):
 
 def check_username(username:str|None):
     if username is None:
-        raise ValueError("Username or Password cannot be None")
+        return None
     with get_target_db() as conn:
         user=conn.execute("SELECT username FROM users WHERE username = ?",(username,)).fetchone()
-        return user["username"]
+    return user["username"] if user is not None else None
 
 def retrieve_password(username:str):
     with get_target_db() as conn:
         passwd = conn.execute("SELECT password FROM users WHERE username = ?",(username,)).fetchone()
-        return passwd["password"]
+    return passwd["password"] if passwd is not None else None
 
 
 # tests to make sure tables are set up correctly
-def test_user_table():
-    with get_target_db() as conn:
-        rows = conn.execute("SELECT * FROM users")
-        for row in rows:
-            print(row)
-
 def test_orders_table():
     with get_target_db() as conn:
         rows = conn.execute('SELECT "Customer ID" FROM orders WHERE "Customer Status"=="Silver"')
