@@ -11,6 +11,7 @@ import hashlib
 import os
 from app.security.validator import LoginAttempt,Order,PaymentBody
 from app.security.rate_limiter import is_allowed
+from app.security.signing import createSignature
 from app.security.ban_manager import is_banned
 from app.logging.logger import log_event
 import httpx
@@ -40,19 +41,7 @@ async def gateway_login(request: Request,model: LoginAttempt):
     log_event(ip,"/login","allowed")
 
     #FORWARDING Request to target API
-    current_file = os.path.abspath(__file__)
-
-    dir_lvl_1 = os.path.dirname(current_file)
-    dir_lvl_2 = os.path.dirname(dir_lvl_1) 
-    backend_dir = os.path.dirname(dir_lvl_2)
-    env_path = os.path.join(backend_dir, '.env.example')
-    load_dotenv(dotenv_path=env_path)
-
-    hex_secret = os.getenv("SHARED_SECRET_KEY")
-
-    if hex_secret is None:
-      raise ValueError("Critical Error: 'SHARED_SECRET_KEY' environment variable is not set.")
-    signature = hmac.new(bytes.fromhex(hex_secret),body,hashlib.sha256).hexdigest()
+    signature = createSignature(request_body=body)
 
     headers = dict(request.headers)
     headers.pop("host", None)
@@ -75,9 +64,9 @@ async def gateway_login(request: Request,model: LoginAttempt):
         headers=response.headers
     )
     
-@router.get("/orders/{customer_id}")
-async def gateway_get_orders(customer_id:int,request:Request):
-    cust_id = customer_id
+@router.get("/orders")
+async def gateway_get_orders(request:Request):
+    raw_body = await request.body()
     if not request.client:
             raise ValueError("No client found for API request")
     ip = request.client.host
@@ -89,31 +78,17 @@ async def gateway_get_orders(customer_id:int,request:Request):
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="IP ratelimited")
     log_event(ip,"/orders","allowed")
 
-    body =b''
-
-    current_file = os.path.abspath(__file__)
-
-    dir_lvl_1 = os.path.dirname(current_file)
-    dir_lvl_2 = os.path.dirname(dir_lvl_1) 
-    backend_dir = os.path.dirname(dir_lvl_2)
-    env_path = os.path.join(backend_dir, '.env.example')
-    load_dotenv(dotenv_path=env_path)
-
-    hex_secret = os.getenv("SHARED_SECRET_KEY")
-
-    if hex_secret is None:
-      raise ValueError("Critical Error: 'SHARED_SECRET_KEY' environment variable is not set.")
-    signature = hmac.new(bytes.fromhex(hex_secret),body,hashlib.sha256).hexdigest()
+    signature = createSignature(raw_body)
 
     headers = dict(request.headers)
     headers.pop("host", None)
     headers["Gateway-Signature"] = signature
 
-    target_url = f"http://127.0.0.1:8001/orders/{cust_id}"
+    target_url = f"http://127.0.0.1:8001/orders/"
 
     request_params = request.query_params
 
-    response = await client.get(target_url)
+    response = await client.get(target_url,params=request_params)
 
     return Response(
         content=response.content,
@@ -142,19 +117,7 @@ async def gateway_place_orders(request:Request, model:Order):
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,detail="Unable to process request")
     log_event(ip,"/db/orders","allowed")
 
-    current_file = os.path.abspath(__file__)
-
-    dir_lvl_1 = os.path.dirname(current_file)
-    dir_lvl_2 = os.path.dirname(dir_lvl_1) 
-    backend_dir = os.path.dirname(dir_lvl_2)
-    env_path = os.path.join(backend_dir, '.env.example')
-    load_dotenv(dotenv_path=env_path)
-
-    hex_secret = os.getenv("SHARED_SECRET_KEY")
-
-    if hex_secret is None:
-      raise ValueError("Critical Error: 'SHARED_SECRET_KEY' environment variable is not set.")
-    signature = hmac.new(bytes.fromhex(hex_secret),body,hashlib.sha256).hexdigest()
+    signature = createSignature(request_body=body)
 
     headers = dict(request.headers)
     headers.pop("host", None)
@@ -195,19 +158,7 @@ async def gateway_payments(request:Request, model:PaymentBody):
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,detail="Unable to process request")
     log_event(ip,"/webhooks/payments","allowed")
 
-    current_file = os.path.abspath(__file__)
-
-    dir_lvl_1 = os.path.dirname(current_file)
-    dir_lvl_2 = os.path.dirname(dir_lvl_1) 
-    backend_dir = os.path.dirname(dir_lvl_2)
-    env_path = os.path.join(backend_dir, '.env.example')
-    load_dotenv(dotenv_path=env_path)
-
-    hex_secret = os.getenv("SHARED_SECRET_KEY")
-
-    if hex_secret is None:
-      raise ValueError("Critical Error: 'SHARED_SECRET_KEY' environment variable is not set.")
-    signature = hmac.new(bytes.fromhex(hex_secret),body,hashlib.sha256).hexdigest()
+    signature = createSignature(request_body=body)
 
     headers = dict(request.headers)
     headers.pop("host", None)
