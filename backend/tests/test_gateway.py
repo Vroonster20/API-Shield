@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock
 import httpx
 import secrets
 import hmac
+import hashlib
 from fastapi.testclient import TestClient
 
 from app.routes import gateway
@@ -15,6 +16,8 @@ from main import app
 
 
 client = TestClient(app)
+
+target_client = TestClient(target_main.app)
 
 
 def test_banned_ip_is_blocked_before_rate_limit_check(monkeypatch,customer_id:int=579):
@@ -74,13 +77,19 @@ def test_rate_limited_request_is_logged_and_not_forwarded(monkeypatch,customer_i
     forward.assert_not_awaited()
     assert events == [("testclient", "/orders", "blocked", "rate-limited")]
 
-def test_invalid_hmac_key_in_enviroment(monkeypatch,customer_id: int=579):
+def test_invalid_gateway_signature(monkeypatch,customer_id = 579):
     invalid_key = secrets.token_hex(32)
-
+    request_body = b""
+    signature = hmac.new(bytes.fromhex(invalid_key),request_body,hashlib.sha256).hexdigest()
     params = {
             "Customer ID":customer_id
     }
+    headers = {
+        "Gateway-Signature": signature
+    }
     forward = AsyncMock()
     monkeypatch.setattr(target_main.client, "get", forward)
-    
-    response = client.get(f"/gateway/orders",params=params)
+    response = target_client.get(f"/orders",params=params,headers=headers)
+    assert response.status_code == 401
+    forward.assert_not_awaited()
+    #assert "Signature not accepted" in events

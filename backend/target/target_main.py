@@ -9,6 +9,7 @@ Run standalone with:
     python -m uvicorn target.target_main:app --reload --port 8001
 """
 from fastapi import FastAPI, HTTPException,status,Request
+from httpx import AsyncClient
 import bcrypt
 from datetime import datetime
 from contextlib import asynccontextmanager
@@ -36,8 +37,6 @@ else:
         retrieve_password,
     )
 
-app = FastAPI(title="Fake Target API")
-
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
@@ -45,6 +44,9 @@ async def lifespan(app:FastAPI):
     fill_user_table()
     yield
 
+app = FastAPI(title="Fake Target API",lifespan=lifespan)
+# TODO: For testing. REMOVE ONCE FINISHED
+client = AsyncClient()
 
 @app.get("/health")
 def health():
@@ -112,7 +114,7 @@ async def get_orders(request:Request):
                     "Total Retail Price for This Order" FROM "orders"
                     WHERE "Customer ID" = ?
                     """
-        orders = conn.execute(query, (cust_id))
+        orders = conn.execute(query, (cust_id,))
         if not orders:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
