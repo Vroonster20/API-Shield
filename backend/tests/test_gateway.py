@@ -77,6 +77,16 @@ def test_rate_limited_request_is_logged_and_not_forwarded(monkeypatch,customer_i
     forward.assert_not_awaited()
     assert events == [("testclient", "/orders", "blocked", "rate-limited")]
 
+def test_missing_gateway_signature(monkeypatch,customer_id = 579):
+    params = {
+                "Customer ID":customer_id
+    }
+    forward = AsyncMock()
+    monkeypatch.setattr(target_main.client, "get", forward)
+    response = target_client.get(f"/orders",params=params)
+    assert response.status_code == 401
+    forward.assert_not_awaited()
+
 def test_invalid_gateway_signature(monkeypatch,customer_id = 579):
     invalid_key = secrets.token_hex(32)
     request_body = b""
@@ -92,4 +102,3 @@ def test_invalid_gateway_signature(monkeypatch,customer_id = 579):
     response = target_client.get(f"/orders",params=params,headers=headers)
     assert response.status_code == 401
     forward.assert_not_awaited()
-    #assert "Signature not accepted" in events
