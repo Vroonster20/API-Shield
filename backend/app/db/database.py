@@ -164,6 +164,8 @@ def insert_ban(
     expires_at: str,
     source: str = "live",
 ) -> int:
+    banned_at = normalize_timestamp(banned_at)
+    expires_at = normalize_timestamp(expires_at)
     with get_db() as conn:
         cursor = conn.execute(
             "INSERT INTO bans (ip, banned_at, expires_at, source) "
@@ -171,6 +173,15 @@ def insert_ban(
             (ip, banned_at, expires_at, source),
         )
         return cursor.lastrowid
+
+
+def normalize_timestamp(value: str) -> str:
+    parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    else:
+        parsed = parsed.astimezone(timezone.utc)
+    return parsed.isoformat(timespec="microseconds")
 
 def get_ban(ban_id: int):
     with get_db() as conn:
@@ -180,19 +191,42 @@ def get_ban(ban_id: int):
         ).fetchone()
 
 def get_active_ban(ip: str, now_iso:str):
+    now = parse_timestamp(now_iso)
     with get_db() as conn:
-        return conn.execute(
-            "SELECT * FROM bans WHERE ip = ? AND expires_at > ? "
-            "ORDER BY expires_at DESC LIMIT 1",
-            (ip, now_iso)
-        ).fetchone()
+        rows = conn.execute(
+            "SELECT * FROM bans WHERE ip = ?",
+            (ip,),
+        ).fetchall()
+    active = [
+        row
+        for row in rows
+        if parse_timestamp(row["expires_at"]) > now
+    ]
+    if not active:
+        return None
+    return max(active, key=lambda row: parse_timestamp(row["expires_at"]))
 
 def get_active_bans(now_iso: str):
+    now = parse_timestamp(now_iso)
     with get_db() as conn:
-        return conn.execute(
-            "SELECT * FROM bans WHERE expires_at > ? ORDER BY expires_at DESC",
-            (now_iso,),
-        ).fetchall()
+        rows = conn.execute("SELECT * FROM bans").fetchall()
+    active = [
+        row
+        for row in rows
+        if parse_timestamp(row["expires_at"]) > now
+    ]
+    return sorted(
+        active,
+        key=lambda row: parse_timestamp(row["expires_at"]),
+        reverse=True,
+    )
+
+
+def parse_timestamp(value: str) -> datetime:
+    parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
 
 def delete_ban(ban_id: int) -> bool:
     with get_db() as conn:

@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 from fastapi.testclient import TestClient
 import pytest
 
@@ -110,6 +112,22 @@ def test_bans_can_be_created_listed_and_revoked(tmp_path, monkeypatch):
     assert revoked.status_code == 200
     assert client.get("/admin/bans", headers=headers).json() == []
     assert client.delete(f"/admin/bans/{ban['id']}", headers=headers).status_code == 404
+
+
+def test_admin_ban_listing_accepts_iso_timestamps(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "db_path", str(tmp_path / "admin.db"))
+    database.create_tables()
+    now = datetime.now(timezone.utc)
+    database.insert_ban(
+        "192.0.2.20",
+        (now - timedelta(minutes=1)).isoformat(timespec="microseconds"),
+        (now + timedelta(minutes=5)).isoformat(timespec="microseconds"),
+    )
+
+    response = client.get("/admin/bans", headers=admin_headers())
+
+    assert response.status_code == 200
+    assert response.json()[0]["ip"] == "192.0.2.20"
 
 
 def test_ban_rejects_invalid_ip(tmp_path, monkeypatch):
