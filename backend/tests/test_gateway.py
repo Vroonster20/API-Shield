@@ -11,6 +11,7 @@ import hashlib
 from fastapi.testclient import TestClient
 
 from app.routes import gateway
+from app.security.signing import createSignature
 from target import target_main
 from main import app
 
@@ -89,10 +90,27 @@ def test_missing_gateway_signature(monkeypatch,customer_id = 579):
 
 def test_invalid_gateway_signature(monkeypatch,customer_id = 579):
     invalid_key = secrets.token_hex(32)
+    request_route = b"/orders"
     request_body = b""
-    signature = hmac.new(bytes.fromhex(invalid_key),request_body,hashlib.sha256).hexdigest()
+    signature = hmac.new(bytes.fromhex(invalid_key),request_body+request_route,hashlib.sha256).hexdigest()
     params = {
             "Customer ID":customer_id
+    }
+    headers = {
+        "Gateway-Signature": signature
+    }
+    forward = AsyncMock()
+    monkeypatch.setattr(target_main.client, "get", forward)
+    response = target_client.get(f"/orders",params=params,headers=headers)
+    assert response.status_code == 401
+    forward.assert_not_awaited()
+
+def test_signature_with_invalid_route(monkeypatch,customer_id = 579):
+    body= b""
+    route=b"/login"
+    signature = createSignature(request_body=body,route=route)
+    params = {
+        "Customer ID":customer_id
     }
     headers = {
         "Gateway-Signature": signature

@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 from fastapi import HTTPException,status
 
-def createSignature(request_body):
+def createSignature(request_body,route:bytes):
     current_file = os.path.abspath(__file__)
     
     dir_lvl_1 = os.path.dirname(current_file)
@@ -19,7 +19,7 @@ def createSignature(request_body):
         raise ValueError("Critical Error: 'SHARED_SECRET_KEY' environment variable is not set.")
     elif hex_secret == "":
         raise ValueError("Critical Error: 'SHARED_SECRET_KEY' environment variable is empty")
-    signature = hmac.new(bytes.fromhex(hex_secret),request_body,hashlib.sha256).hexdigest()
+    signature = hmac.new(bytes.fromhex(hex_secret),request_body + route,hashlib.sha256).hexdigest()
     return signature
 
 def validateKey(given_sig,request_body):
