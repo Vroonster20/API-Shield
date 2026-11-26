@@ -18,5 +18,5 @@ def log_event(ip: str, path: str, decision: str, reason: str | None = None) -> N
         conn.execute(
             "INSERT INTO requests_log (timestamp, ip, path, decision, reason) "
             "VALUES (?, ?, ?, ?, ?)",
-            (datetime.now(), ip, path, decision, reason),
+            (datetime.now().isoformat(timespec="microseconds"), ip, path, decision, reason),
         )

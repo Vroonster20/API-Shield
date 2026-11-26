@@ -5,11 +5,14 @@ the full chain (ban check -> rate limit -> validation -> forward -> log).
 from unittest.mock import AsyncMock
 
 import httpx
+import pytest
 import secrets
 import hmac
 import hashlib
 from fastapi.testclient import TestClient
 
+from app.core.config import settings
+from app.db import database
 from app.routes import gateway
 from app.security.signing import createSignature
 from target import target_main
@@ -19,6 +22,13 @@ from main import app
 client = TestClient(app)
 
 target_client = TestClient(target_main.app)
+
+
+@pytest.fixture(autouse=True)
+def gateway_test_environment(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "db_path", str(tmp_path / "shield.db"))
+    monkeypatch.setenv("SHARED_SECRET_KEY", "ab" * 32)
+    database.create_tables()
 
 
 def test_banned_ip_is_blocked_before_rate_limit_check(monkeypatch,customer_id:int=579):

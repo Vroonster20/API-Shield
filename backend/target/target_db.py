@@ -6,7 +6,7 @@ independent, as a real protected app would be.
 import sqlite3
 from contextlib import contextmanager
 from faker import Faker
-import pandas as pd
+import csv
 import bcrypt
 import datetime
 
@@ -34,9 +34,41 @@ def create_target_tables():
                             password TEXT NOT NULL
                         )
         """)
-        df = pd.read_csv("./target/source_files/orders.csv")
-        df = df.drop(columns=['Delivery Date', 'Cost Price Per Unit'])
-        df.to_sql("orders",conn, if_exists='replace', index=False)
+        columns = (
+            "Customer ID",
+            "Customer Status",
+            "Date Order was placed",
+            "Order ID",
+            "Product ID",
+            "Quantity Ordered",
+            "Total Retail Price for This Order",
+        )
+
+        conn.execute("DROP TABLE IF EXISTS orders")
+        conn.execute("""
+            CREATE TABLE orders (
+                "Customer ID" INTEGER,
+                "Customer Status" TEXT,
+                "Date Order was placed" TEXT,
+                "Order ID" INTEGER,
+                "Product ID" INTEGER,
+                "Quantity Ordered" INTEGER,
+                "Total Retail Price for This Order" REAL
+            )
+        """)
+
+        with open(
+            "./target/source_files/orders.csv",
+            newline="",
+            encoding="utf-8-sig",
+        ) as source:
+            conn.executemany(
+                "INSERT INTO orders VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    tuple(row[column] or None for column in columns)
+                    for row in csv.DictReader(source)
+                ),
+            )
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS webhooks (
@@ -62,9 +94,12 @@ def fill_user_table():
             conn.execute("INSERT INTO users (username,password) VALUES (?,?)", user_data)
             conn.commit()
 
-def addwebhook(event_id,recieved:datetime.datetime):
+def addwebhook(event_id, recieved: datetime.datetime):
     with get_target_db() as conn:
-        conn.execute("INSERT INTO webhooks (event_id,recieved_at) VALUES (?,?)",(event_id,recieved))
+        conn.execute(
+            "INSERT INTO webhooks (event_id, recieved_at) VALUES (?, ?)",
+            (event_id, recieved.isoformat(timespec="microseconds")),
+        )
 
 def check_username(username:str|None):
     if username is None:
