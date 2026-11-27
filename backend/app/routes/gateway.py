@@ -55,7 +55,7 @@ async def fowardPOST(body:bytes, headers:dict[str,str], method:str, route:str):
     return response
 
 @router.post("/login")
-async def gateway_login(request: Request,model: LoginAttempt):
+async def gateway_login(request: Request):
     route = b"/login"
     route_str = "/login"
     if not request.client:
@@ -70,8 +70,9 @@ async def gateway_login(request: Request,model: LoginAttempt):
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="IP ratelimited")
     body = await request.body()
     try:
-        model.model_validate_json(body)
+        LoginAttempt.model_validate_json(body)
     except ValidationError:
+        log_event(ip,"/login","blocked","incorrect format")
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,detail="Unable to process request")
     log_event(ip,"/login","allowed")
 
@@ -93,7 +94,6 @@ async def gateway_login(request: Request,model: LoginAttempt):
 async def gateway_get_orders(request:Request):
     route = b"/orders"
     route_str = "/orders"
-    raw_body = await request.body()
     if not request.client:
             raise ValueError("No client found for API request")
     ip = request.client.host
@@ -103,7 +103,12 @@ async def gateway_get_orders(request:Request):
     if not is_allowed(ip):
         log_event(ip,"/orders","blocked","rate-limited")
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="IP ratelimited")
+    params = dict(request.query_params)
+    if "Customer ID" not in params.keys() or len(params.keys())> 1:
+        log_event(ip,"/orders","blocked","incorrect format")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,detail="Unable to process request")
     log_event(ip,"/orders","allowed")
+    raw_body = await request.body()
 
     signature = createSignature(request_body=raw_body,route=route)
 
@@ -120,7 +125,7 @@ async def gateway_get_orders(request:Request):
         )
 
 @router.post("/db/orders")
-async def gateway_place_orders(request:Request, model:Order):
+async def gateway_place_orders(request:Request):
     route = b"/db/orders"
     route_str = "/db/orders"
     if not request.client:
@@ -132,12 +137,11 @@ async def gateway_place_orders(request:Request, model:Order):
     if not is_allowed(ip):
         log_event(ip,"/db/orders","blocked","rate-limited")
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="IP ratelimited")
-    log_event(ip,"/db/orders","allowed")
     body = await request.body()
-
     try:
-        model.model_validate_json(body)
+        Order.model_validate_json(body)
     except ValidationError:
+        log_event(ip,"/db/orders","blocked","incorrect format")
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,detail="Unable to process request")
     log_event(ip,"/db/orders","allowed")
 
@@ -155,23 +159,23 @@ async def gateway_place_orders(request:Request, model:Order):
         )
 
 @router.post("/webhooks/payments")
-async def gateway_payments(request:Request, model:PaymentBody):
+async def gateway_payments(request:Request):
     route = b"/webhooks/payments"
     route_str= "/webhooks/payments"
     if not request.client:
             raise ValueError("No client found for API request")
     ip = request.client.host
     if is_banned(ip):
-        log_event(ip,"/orders","blocked","banned")
+        log_event(ip,"/webhooks/payments","blocked","banned")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="IP banned")
     if not is_allowed(ip):
-        log_event(ip,"/orders","blocked","rate-limited")
+        log_event(ip,"/webhooks/payments","blocked","rate-limited")
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="IP ratelimited")
-    log_event(ip,"/orders","allowed")
     body = await request.body()
     try:
-        model.model_validate_json(body)
+        PaymentBody.model_validate_json(body)
     except ValidationError:
+        log_event(ip,"/webhooks/payments","blocked","incorrect format")
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,detail="Unable to process request")
     log_event(ip,"/webhooks/payments","allowed")
 

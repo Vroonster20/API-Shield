@@ -29,10 +29,27 @@ def test_banned_ip_is_blocked_before_rate_limit_check(monkeypatch,customer_id:in
         "Customer ID":customer_id
     }
 
-    response = client.get(f"/gateway/orders",params=params)
+    response = client.get("/gateway/orders",params=params)
 
     assert response.status_code == 403
     rate_limit.assert_not_called()
+
+def test_malformed_request_is_logged_and_not_forwarded(monkeypatch):
+    events = []
+    malformed_request = AsyncMock()
+    monkeypatch.setattr(gateway, "is_banned", lambda ip: False)
+    monkeypatch.setattr(gateway, "is_allowed", lambda ip: True)
+    monkeypatch.setattr(
+            gateway,
+            "log_event",
+            lambda *event: events.append(event),
+        )
+    monkeypatch.setattr(gateway.client, "get", malformed_request)
+    response = client.get("/gateway/orders")
+    assert response.status_code == 422
+    malformed_request.assert_not_awaited()
+    assert events == [("testclient","/orders","blocked","incorrect format")]
+
 
 
 def test_allowed_request_is_logged_and_forwarded(monkeypatch,customer_id:int=579):

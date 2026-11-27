@@ -58,7 +58,7 @@ def list_logs(_: dict = Depends(require_admin)):
 
 @router.get("/bans")
 def list_bans(_: dict = Depends(require_admin)):
-    now = datetime.now().isoformat(timespec="microseconds")
+    now = datetime.now(timezone.utc).isoformat(timespec="microseconds")
     return [
         {**dict(row), "status": "active"}
         for row in get_active_bans(now)

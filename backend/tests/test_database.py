@@ -79,6 +79,24 @@ def test_existing_tables_gain_source_column_with_live_default(tmp_path, monkeypa
     assert database.get_recent_logs()[0]["source"] == "live"
 
 
+def test_active_bans_normalize_legacy_timestamp_formats(tmp_path, monkeypatch):
+    use_temp_db(tmp_path, monkeypatch)
+    database.insert_ban(
+        "192.0.2.30",
+        "2026-01-01T00:00:00",
+        "2026-01-01T00:05:00Z",
+    )
+
+    assert database.get_active_ban(
+        "192.0.2.30",
+        "2026-01-01T00:01:00+00:00",
+    ) is not None
+    assert database.get_active_ban(
+        "192.0.2.30",
+        "2026-01-01T00:06:00+00:00",
+    ) is None
+
+
 
 
 
