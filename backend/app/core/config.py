@@ -28,13 +28,9 @@ class Settings(BaseSettings):
             raise ValueError("admin_password cannot be a common placeholder")
         return v
 
-    shared_secret_key: str
-
     cors_allowed_origin_regex: str = (
         r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
     )
-
-    shared_secret_key: SecretStr = SecretStr("")
 
 
     class Config:

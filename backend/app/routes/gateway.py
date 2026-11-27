@@ -6,22 +6,58 @@ These endpoints mirror the fake target's real endpoints
 """
 from fastapi import APIRouter, Request, Response, HTTPException,status
 from pydantic import ValidationError
-import hmac
-import hashlib
-import os
+from app.core.config import settings
 from app.security.validator import LoginAttempt,Order,PaymentBody
 from app.security.rate_limiter import is_allowed
+from app.security.signing import createSignature
 from app.security.ban_manager import is_banned
 from app.logging.logger import log_event
 import httpx
+from httpx import Timeout,TimeoutException
 from dotenv import load_dotenv
 
 
 router = APIRouter()
 client = httpx.AsyncClient()
 
+async def fowardGET(headers:dict[str,str], route:str,params):
+    target_url = settings.target_api_url + route
+
+    timeout = Timeout(10.0,connect=3.0)
+
+    try: 
+        response = await client.get(target_url,headers=headers,params=params,timeout=timeout)
+    except TimeoutException:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail= "Target timeout"
+        )
+    return response
+
+async def fowardPOST(body:bytes, headers:dict[str,str], method:str, route:str):
+    target_url = settings.target_api_url + route
+    timeout = Timeout(10.0,connect=3.0)
+
+    forwarded_request = client.build_request(
+            method = method,
+            url=target_url,
+            headers=headers,
+            content=body,
+            timeout=timeout
+        )
+    try:
+        response = await client.send(forwarded_request)
+    except TimeoutException:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Target timeout"
+        )
+    return response
+
 @router.post("/login")
 async def gateway_login(request: Request,model: LoginAttempt):
+    route = b"/login"
+    route_str = "/login"
     if not request.client:
         raise ValueError("No client found for API request")
     ip = request.client.host
@@ -40,44 +76,24 @@ async def gateway_login(request: Request,model: LoginAttempt):
     log_event(ip,"/login","allowed")
 
     #FORWARDING Request to target API
-    current_file = os.path.abspath(__file__)
-
-    dir_lvl_1 = os.path.dirname(current_file)
-    dir_lvl_2 = os.path.dirname(dir_lvl_1) 
-    backend_dir = os.path.dirname(dir_lvl_2)
-    env_path = os.path.join(backend_dir, '.env.example')
-    load_dotenv(dotenv_path=env_path)
-
-    hex_secret = os.getenv("SHARED_SECRET_KEY")
-
-    if hex_secret is None:
-      raise ValueError("Critical Error: 'SHARED_SECRET_KEY' environment variable is not set.")
-    signature = hmac.new(bytes.fromhex(hex_secret),body,hashlib.sha256).hexdigest()
+    signature = createSignature(request_body=body,route=route)
 
     headers = dict(request.headers)
     headers.pop("host", None)
     headers["Gateway-Signature"] = signature
 
-    target_url = "http://127.0.0.1:8001/login"
-
-    forwarded_request = client.build_request(
-        method = request.method,
-        url=target_url,
-        headers=headers,
-        content=body
-    )
-
-    response = await client.send(forwarded_request)
-
+    response = await fowardPOST(body=body,headers=headers,route=route_str,method=request.method)
     return Response(
-        content=response.content,
-        status_code=response.status_code,
-        headers=response.headers
+            content=response.content,
+            status_code=response.status_code,
+            headers = response.headers  
     )
     
-@router.get("/orders/{customer_id}")
-async def gateway_get_orders(customer_id:int,request:Request):
-    cust_id = customer_id
+@router.get("/orders")
+async def gateway_get_orders(request:Request):
+    route = b"/orders"
+    route_str = "/orders"
+    raw_body = await request.body()
     if not request.client:
             raise ValueError("No client found for API request")
     ip = request.client.host
@@ -89,41 +105,24 @@ async def gateway_get_orders(customer_id:int,request:Request):
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="IP ratelimited")
     log_event(ip,"/orders","allowed")
 
-    body =b''
-
-    current_file = os.path.abspath(__file__)
-
-    dir_lvl_1 = os.path.dirname(current_file)
-    dir_lvl_2 = os.path.dirname(dir_lvl_1) 
-    backend_dir = os.path.dirname(dir_lvl_2)
-    env_path = os.path.join(backend_dir, '.env.example')
-    load_dotenv(dotenv_path=env_path)
-
-    hex_secret = os.getenv("SHARED_SECRET_KEY")
-
-    if hex_secret is None:
-      raise ValueError("Critical Error: 'SHARED_SECRET_KEY' environment variable is not set.")
-    signature = hmac.new(bytes.fromhex(hex_secret),body,hashlib.sha256).hexdigest()
+    signature = createSignature(request_body=raw_body,route=route)
 
     headers = dict(request.headers)
     headers.pop("host", None)
     headers["Gateway-Signature"] = signature
 
-    target_url = f"http://127.0.0.1:8001/orders/{cust_id}"
-
-    request_params = request.query_params
-
-    response = await client.get(target_url)
+    response = await fowardGET(headers=headers,route=route_str,params=request.query_params)
 
     return Response(
-        content=response.content,
-        status_code=response.status_code,
-        headers = response.headers
-        
-    )    
+                content=response.content,
+                status_code=response.status_code,
+                headers = response.headers  
+        )
 
 @router.post("/db/orders")
 async def gateway_place_orders(request:Request, model:Order):
+    route = b"/db/orders"
+    route_str = "/db/orders"
     if not request.client:
             raise ValueError("No client found for API request")
     ip = request.client.host
@@ -142,42 +141,23 @@ async def gateway_place_orders(request:Request, model:Order):
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,detail="Unable to process request")
     log_event(ip,"/db/orders","allowed")
 
-    current_file = os.path.abspath(__file__)
-
-    dir_lvl_1 = os.path.dirname(current_file)
-    dir_lvl_2 = os.path.dirname(dir_lvl_1) 
-    backend_dir = os.path.dirname(dir_lvl_2)
-    env_path = os.path.join(backend_dir, '.env.example')
-    load_dotenv(dotenv_path=env_path)
-
-    hex_secret = os.getenv("SHARED_SECRET_KEY")
-
-    if hex_secret is None:
-      raise ValueError("Critical Error: 'SHARED_SECRET_KEY' environment variable is not set.")
-    signature = hmac.new(bytes.fromhex(hex_secret),body,hashlib.sha256).hexdigest()
+    signature = createSignature(request_body=body,route=route)
 
     headers = dict(request.headers)
     headers.pop("host", None)
     headers["Gateway-Signature"] = signature
-
-    target_url = "http://127.0.0.1:8001/db/orders"
-
-    forwarded_request = client.build_request(
-        method = request.method,
-        url=target_url,
-        headers=headers,
-        content=body
-    )
-
-    response = await client.send(forwarded_request)
-
+    
+    response = await fowardPOST(body=body,headers=headers,route=route_str,method=request.method)
     return Response(
-        content=response.content,
-        status_code=response.status_code,
-        headers=response.headers
-    )
+            content=response.content,
+            status_code=response.status_code,
+            headers = response.headers  
+        )
+
 @router.post("/webhooks/payments")
 async def gateway_payments(request:Request, model:PaymentBody):
+    route = b"/webhooks/payments"
+    route_str= "/webhooks/payments"
     if not request.client:
             raise ValueError("No client found for API request")
     ip = request.client.host
@@ -195,38 +175,15 @@ async def gateway_payments(request:Request, model:PaymentBody):
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,detail="Unable to process request")
     log_event(ip,"/webhooks/payments","allowed")
 
-    current_file = os.path.abspath(__file__)
-
-    dir_lvl_1 = os.path.dirname(current_file)
-    dir_lvl_2 = os.path.dirname(dir_lvl_1) 
-    backend_dir = os.path.dirname(dir_lvl_2)
-    env_path = os.path.join(backend_dir, '.env.example')
-    load_dotenv(dotenv_path=env_path)
-
-    hex_secret = os.getenv("SHARED_SECRET_KEY")
-
-    if hex_secret is None:
-      raise ValueError("Critical Error: 'SHARED_SECRET_KEY' environment variable is not set.")
-    signature = hmac.new(bytes.fromhex(hex_secret),body,hashlib.sha256).hexdigest()
+    signature = createSignature(request_body=body,route=route)
 
     headers = dict(request.headers)
     headers.pop("host", None)
     headers["Gateway-Signature"] = signature
-
-    target_url = "http://127.0.0.1:8001/webhooks/payments"
-
-    forwarded_request = client.build_request(
-        method = request.method,
-        url=target_url,
-        headers=headers,
-        content=body
-    )
-
-    response = await client.send(forwarded_request)
-
+    
+    response = await fowardPOST(body=body,headers=headers,route=route_str,method=request.method)
     return Response(
-        content=response.content,
-        status_code=response.status_code,
-        headers = response.headers
-        
-    )
+            content=response.content,
+            status_code=response.status_code,
+            headers = response.headers  
+        )
