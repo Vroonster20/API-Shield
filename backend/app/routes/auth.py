@@ -30,7 +30,17 @@ def login(login_data: LoginRequest, response: Response):
     username = login_data.username
     password = login_data.password
 
-    if username != settings.admin_username or password != settings.admin_password:
+    username_valid = secrets.compare_digest(
+        username.encode("utf-8"),
+        settings.admin_username.encode("utf-8"),
+    )
+    
+    password_valid = secrets.compare_digest(
+        password.encode("utf-8"),
+        settings.admin_password.encode("utf-8"),
+    )
+
+    if not (username_valid and password_valid):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # issue a session token/cookie here

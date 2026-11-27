@@ -1,7 +1,7 @@
 """
 App configuration, loaded from environment variables (.env).
 """
-from pydantic import SecretStr
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -22,6 +22,13 @@ class Settings(BaseSettings):
     cors_allowed_origin_regex: str = (
         r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
     )
+
+    @field_validator("admin_password")
+    @classmethod
+    def reject_default_admin_password(cls, value: str) -> str:
+        if value == "changeme":
+            raise ValueError("ADMIN_PASSWORD must not be changeme")
+        return value
 
     model_config = SettingsConfigDict(
         env_file=".env",
