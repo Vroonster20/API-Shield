@@ -3,16 +3,27 @@ Tests for admin auth (login + require_admin).
 """
 from unittest.mock import patch
 
+from pydantic import ValidationError
+
 import pytest
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
-from app.core.config import settings
+from app.core.config import Settings, settings
 from app.routes.auth import ACTIVE_SESSIONS, require_admin, router
 
 app = FastAPI()
 app.include_router(router, prefix="/admin")
 
+
+@pytest.mark.parametrize("bad_password", ["", "short", "changeme", " " * 12])
+def test_weak_admin_password_rejected(bad_password):
+    with pytest.raises(ValidationError):
+        Settings(admin_password=bad_password)
+
+
+def test_strong_admin_password_accepted():
+    assert Settings(admin_password="a-long-valid-password").admin_password == "a-long-valid-password"
 
 @app.get("/protected")
 def protected(session: dict = Depends(require_admin)):
