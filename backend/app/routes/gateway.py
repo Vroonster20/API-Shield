@@ -94,7 +94,6 @@ async def gateway_login(request: Request):
 async def gateway_get_orders(request:Request):
     route = b"/orders"
     route_str = "/orders"
-    raw_body = await request.body()
     if not request.client:
             raise ValueError("No client found for API request")
     ip = request.client.host
@@ -104,7 +103,12 @@ async def gateway_get_orders(request:Request):
     if not is_allowed(ip):
         log_event(ip,"/orders","blocked","rate-limited")
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="IP ratelimited")
+    params = dict(request.query_params)
+    if "Customer ID" not in params.keys() or len(params.keys())> 1:
+        log_event(ip,"/orders","blocked","incorrect format")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,detail="Unable to process request")
     log_event(ip,"/orders","allowed")
+    raw_body = await request.body()
 
     signature = createSignature(request_body=raw_body,route=route)
 
